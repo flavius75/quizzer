@@ -10,15 +10,15 @@ router = APIRouter()
 
 # Register new user
 
-@router.get("/", response_model=List[QuizPreview])
+@router.get("/", response_model=List[Quiz])
 def get_quizzes(session: Session = Depends(get_session)):
     quizzes = session.exec(select(Quiz)).all()
     return quizzes
 
 
-@router.get("/{quiz_id}", response_model=QuizPreview)
-def get_single_quiz(user_id: int , session: Session = Depends(get_session)):
-    statement = select(Quiz).where(Quiz.id == user_id)
+@router.get("/{quiz_id}", response_model=Quiz)
+def get_single_quiz(quiz_id: int , session: Session = Depends(get_session)):
+    statement = select(Quiz).where(Quiz.id == quiz_id)
     quiz = session.exec(statement).first()
     if not quiz:
         raise HTTPException(status_code=404, detail="User not found")

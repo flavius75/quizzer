@@ -1,6 +1,12 @@
 import Link from 'next/link'
+import { useAuth } from "@/provider/authProvider";
+
 
 export default function Navbar(){
+  const { username, role } = useAuth();
+
+    
+    
     return(
         <header className="bg-white">
   <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
@@ -29,6 +35,8 @@ export default function Navbar(){
       </div>
 
       <div className="flex items-center gap-4">
+        
+      {!username ? 
         <div className="sm:flex sm:gap-4">
           <Link href="/auth/login" className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm">
             Login
@@ -38,9 +46,11 @@ export default function Navbar(){
             <Link href="/auth/register" className="rounded-md bg-gray-100 px-5 py-2.5 text-sm font-medium text-teal-600">
             Register
             </Link>
-          
           </div>
         </div>
+      :
+        <h2>{username}</h2>
+      }
 
         <div className="block md:hidden">
           <button

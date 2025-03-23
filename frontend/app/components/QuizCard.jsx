@@ -32,7 +32,7 @@ function successRate(singleQuiz){
     let totalAttempts = 0
     let successRate = 0
 
-    singleQuiz.quizQuestions.forEach((question) => {
+    singleQuiz.questions.questionList.forEach((question) => {
         totalAttempts += question.statistics.totalAttempts;
         correctQuestions += question.statistics.correctAttempts;
     })
@@ -43,10 +43,10 @@ function successRate(singleQuiz){
 
 export default function QuizCard({singleQuiz}){
     const {quizToStartObject} = useGlobalContextProvider();
-    const {setSelectQuizToStart} = quizToStartObject
+    const {setSelectQuizToStart} = quizToStartObject    
 
-    const {id, quizTitle, quizQuestions} = singleQuiz;
-    const totalQuestions = quizQuestions.length;
+    const {id, title, questions} = singleQuiz;
+    const totalQuestions = questions.questionList.length;
     const globalSuccessRate = successRate(singleQuiz)
 
 
@@ -71,7 +71,7 @@ export default function QuizCard({singleQuiz}){
                 </div>                
             </CardHeader>
             <CardContent>
-                <span className="text-lg font-bold">{quizTitle}</span>
+                <span className="text-lg font-bold">{title}</span>
                 <p className="text-base font-light">{totalQuestions} Questions</p>
             </CardContent>
             <CardFooter>

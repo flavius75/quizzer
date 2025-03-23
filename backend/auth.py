@@ -11,6 +11,7 @@ from db.database import get_session
 import os
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 

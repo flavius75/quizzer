@@ -4,10 +4,10 @@ import useGlobalContextProvider from "@/app/ContextApi";
 export default function QuizStartHeader({parentTimer}){
     const {quizToStartObject} = useGlobalContextProvider();
     const {selectQuizToStart} = quizToStartObject
-    const {quizTitle} = selectQuizToStart
-    const {quizQuestions} = selectQuizToStart
+    const {title} = selectQuizToStart
+    const {questions} = selectQuizToStart
 
-    const totalQuestions = quizQuestions.length;
+    const totalQuestions = questions.questionList.length;
 
     
     return(
@@ -17,7 +17,7 @@ export default function QuizStartHeader({parentTimer}){
                     <Code size={28} strokeWidth={1.5} color="white" />
                 </div>
             <div className="flex flex-col gap-1">
-                <h2 className="font-bold text-xl">{quizTitle}</h2>
+                <h2 className="font-bold text-xl">{title}</h2>
                 <span className="font-light text-sm">{totalQuestions} Questions</span>
             </div>
         </div>

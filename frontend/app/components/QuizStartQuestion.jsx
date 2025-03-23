@@ -14,7 +14,7 @@ import { Frown, Smile, Laugh, CircleCheck, CircleX } from 'lucide-react';
 export default function QuizStartQuestion({ onUpdateTime }) {
     const { quizToStartObject, allQuizzes, setAllQuizzes } = useGlobalContextProvider();
     const { selectQuizToStart } = quizToStartObject;
-    const { quizQuestions } = selectQuizToStart;
+    const { questions } = selectQuizToStart;
     const time = 10;
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedChoice, setSelectedChoice] = useState(null);
@@ -24,6 +24,8 @@ export default function QuizStartQuestion({ onUpdateTime }) {
     const [timer, setTimer] = useState(time);
     const intervalRef = useRef(null);
     const router = useRouter();
+
+    const quizQuestions = questions.questionList
 
     useEffect(() => {
         const quizIndexFound = allQuizzes.findIndex(
@@ -45,26 +47,25 @@ export default function QuizStartQuestion({ onUpdateTime }) {
 
     function selectChoiceFunction(indexChoice) {
         setSelectedChoice(indexChoice);
-
         const currentAllQuizzes = [...allQuizzes];
-        currentAllQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].answeredResult = indexChoice;
+        currentAllQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].answeredResult = indexChoice;
 
         setAllQuizzes(currentAllQuizzes);
     }
 
     function moveToTheNextQuestion() {
-        if (allQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].answeredResult === -1) {
+        if (allQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].answeredResult === -1) {
             console.log("select answer");
             return;
         }
 
-        allQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].statistics.totalAttempts += 1;
+        allQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].statistics.totalAttempts += 1;
 
         if (
-            allQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].answeredResult !== allQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].correctAnswer
+            allQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].answeredResult !== allQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].correctAnswer
         ) {
             console.log("incorrect answer");
-            allQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].statistics.incorrectAttempts += 1;
+            allQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].statistics.incorrectAttempts += 1;
 
             if (currentQuestionIndex !== quizQuestions.length - 1) {
                 setTimeout(() => {
@@ -81,11 +82,11 @@ export default function QuizStartQuestion({ onUpdateTime }) {
         }
 
         console.log("correct answer");
-        allQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].statistics.correctAttempts += 1;
+        allQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].statistics.correctAttempts += 1;
 
         setScore((prevState) => prevState + 1);
 
-        if (currentQuestionIndex === quizQuestions.length - 1 && allQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].answeredResult === allQuizzes[indexOfQuizSelected].quizQuestions[currentQuestionIndex].correctAnswer) {
+        if (currentQuestionIndex === quizQuestions.length - 1 && allQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].answeredResult === allQuizzes[indexOfQuizSelected].questions.questionList[currentQuestionIndex].correctAnswer) {
             setIsQuizEnded(true);
             return;
         }
@@ -150,7 +151,7 @@ export default function QuizStartQuestion({ onUpdateTime }) {
 function ScoreComponent({ quizStartParentProps }) {
     const { quizToStartObject, allQuizzes } = useGlobalContextProvider();
     const { selectQuizToStart } = quizToStartObject;
-    const numberOfQuestions = selectQuizToStart.quizQuestions.length;
+    const numberOfQuestions = selectQuizToStart.questions.questionList.length;
     const router = useRouter();
     const {
         setIsQuizEnded,
@@ -162,7 +163,7 @@ function ScoreComponent({ quizStartParentProps }) {
     } = quizStartParentProps;
 
     function emojiIconScore() {
-        const result = (score / selectQuizToStart.quizQuestions.length) * 100;
+        const result = (score / selectQuizToStart.questions.questionList.length) * 100;
 
         if (result < 25) {
             return <Frown size={100} />;
@@ -216,7 +217,7 @@ function ScoreComponent({ quizStartParentProps }) {
                                 <div className="flex gap-1 items-center justify-center">
                                     <CircleX />
                                     <span className="text-[14px]">
-                                        Incorrect Answers: {selectQuizToStart.quizQuestions.length - score}
+                                        Incorrect Answers: {selectQuizToStart.questions.questionList.length - score}
                                     </span>
                                 </div>
                             </div>

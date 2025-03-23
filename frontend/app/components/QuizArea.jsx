@@ -6,6 +6,7 @@ import useGlobalContextProvider from '../ContextApi'
 
 export default function Quizarea ({props}){
     const { allQuizzes } = useGlobalContextProvider();
+    
 
     if (!allQuizzes) {
         return <div>Loading...</div>;

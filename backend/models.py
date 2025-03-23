@@ -57,4 +57,3 @@ class QuizPreview(SQLModel):
     tag: int
     title: str 
     category: str
-    image: Optional[str]
