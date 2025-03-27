@@ -32,6 +32,6 @@ def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), 
 
     access_token = create_access_token(data={"sub": user.email}, expires_delta=timedelta(minutes=30))
     response.set_cookie(key="token", value=access_token)
-    return {"access_token": access_token, "token_type": "bearer", "user_role": user.role, "username":user.username}
+    return {"access_token": access_token, "user_role": user.role, "username":user.username, "score":user.score}
 
 
