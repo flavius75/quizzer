@@ -70,7 +70,7 @@ export default function QuizStartQuestion({ onUpdateTime }) {
                 setTimeout(() => {
                     setCurrentQuestionIndex((current) => current + 1);
                     setSelectedChoice(null);
-                }, 1200);
+                }, 500);
             } else {
                 setTimer(0);
                 clearInterval(intervalRef.current);

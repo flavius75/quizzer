@@ -33,7 +33,7 @@ export default function QuizArea (){
                     <PlaceHolder />
                 </div>
             ):(
-                <div className="flex mt-6 gap-8 flex-wrap">
+                <div className="flex mt-8 gap-8 flex-wrap">
                     {allQuizzes.map((singleQuiz, quizIndex) =>(
                         <div key={quizIndex}>
                             <QuizCard singleQuiz={singleQuiz}/>

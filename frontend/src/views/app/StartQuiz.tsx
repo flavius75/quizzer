@@ -24,7 +24,6 @@ export default function StartQuiz(props) {
 
   return (
       <main className="h-full max-w-[1220px] mx-auto p-2 md:p-5">
-        <Navbar/>
         {selectQuizToStart === null ? (
           <div className="h-svh flex flex-col gap-2 items-center justify-center">
             <CircleX size={100}/>
@@ -32,7 +31,7 @@ export default function StartQuiz(props) {
             <span>You will be redirected to the home page</span>
           </div>
         ):(
-          <div className="flex flex-col px-24 mt-[35px]">
+          <div className="flex flex-col md:px-24 px-2 mt-[35px]">
               <QuizStartHeader parentTimer={parentTimer} />
               <div className="mt-10 flex items-center justify-center">
                   <QuizStartQuestion onUpdateTime={onUpdateTime}/>

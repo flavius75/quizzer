@@ -46,6 +46,8 @@ export function LoginForm({
         const data = response.data;
         login(data); // Store user data in the auth store
         navigate("/"); // Redirect to the dashboard
+
+        axios.defaults.headers.common['Authorization'] = "Bearer " + data.access_token;
       }
     } catch (err) {
       console.error("Login failed:", err);
