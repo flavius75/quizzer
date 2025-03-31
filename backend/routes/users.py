@@ -8,11 +8,15 @@ from typing import List
 
 router = APIRouter()
 
-# Register new user
 
 @router.get("/", response_model=List[UserRead])
 def get_users(user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     users = session.exec(select(User)).all()
+    return users
+
+@router.get("/leaderboard", response_model=List[UserRead])
+def get_users(user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    users = session.exec(select(User).order_by(User.score.desc())).all()
     return users
 
 
