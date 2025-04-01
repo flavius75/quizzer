@@ -11,7 +11,6 @@ import { useState, useEffect } from "react";
 
 export default function Leaderboard() {
 
-
     const [ allUsers, setAllUsers ] = useState([])
 
     useEffect(() => {

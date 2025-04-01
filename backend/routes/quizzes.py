@@ -15,6 +15,10 @@ def get_quizzes(session: Session = Depends(get_session)):
     quizzes = session.exec(select(Quiz)).all()
     return quizzes
 
+@router.get("/preview", response_model=List[QuizPreview])
+def get_quizzes_preview(session: Session = Depends(get_session)):
+    quizzes = session.exec(select(Quiz)).all()
+    return quizzes
 
 @router.get("/{quiz_id}", response_model=Quiz)
 def get_single_quiz(quiz_id: int , session: Session = Depends(get_session)):

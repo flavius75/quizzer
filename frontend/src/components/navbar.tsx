@@ -1,6 +1,8 @@
 
 import { useAuthStore } from "@/store/authStore";
 import { Link, useNavigate } from "react-router";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,16 +66,21 @@ export default function Navbar(){
                 </div>
               :
               <>
-                <h2>Hello {user.username} | <b>{user.score} XP</b></h2>
+                <h2>Hello {user.username}</h2>
+                <Avatar>
+                  <AvatarImage src="https://github.com/shadcn.png" />
+                  <AvatarFallback>CN</AvatarFallback>
+                </Avatar>
                 <DropdownMenu>
                 <DropdownMenuTrigger><ChevronDown /></DropdownMenuTrigger>
                 <DropdownMenuContent>
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => navigate("/profile")}>Profile</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/")}>Quizzes</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/user/leaderboard")}>Leaderboard</DropdownMenuItem>
                     {user.user_role == "admin" && 
-                      <DropdownMenuItem onClick={() => navigate("/login")}>Administration</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/admin/dashboard")}>Administration</DropdownMenuItem>
                     }
                     <DropdownMenuItem onClick={handleLogout}>Log Out</DropdownMenuItem>
                   </DropdownMenuContent>

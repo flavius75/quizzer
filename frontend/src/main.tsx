@@ -11,6 +11,9 @@ import { LoginForm } from './components/login-form';
 import Leaderboard from './views/app/Leaderboard';
 import Quizzes from './views/app/Quizzes';
 import NotFound from './components/NotFound';
+import DashboardAdmin from './views/admin/DashboardAdmin';
+import UsersAdmin from './views/admin/UsersAdmin';
+import QuizzesAdmin from './views/admin/QuizzesAdmin';
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -34,10 +37,11 @@ createRoot(document.getElementById('root')!).render(
       </Route>
 
       <Route path="admin" element={<AdminGuard />}>
-        <Route index element={<AdminLayout />} />
-        {/* <Route path="dashboard" element={<DashboardAdmin />} />
-        <Route path="users" element={<UsersAdmin />} />
-        <Route path="quizzes" element={<QuizzesAdmin />} /> */}
+        <Route element={<AdminLayout />} >
+          <Route path="dashboard" element={<DashboardAdmin />} />
+          <Route path="users" element={<UsersAdmin />} />
+          <Route path="quizzes" element={<QuizzesAdmin />} />
+        </Route>
       </Route>
 
       <Route path='*' element={<NotFound />} />

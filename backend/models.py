@@ -57,3 +57,5 @@ class QuizPreview(SQLModel):
     tag: int
     title: str 
     category: str
+    type: QuizType
+    creator: Optional[UserRead]
