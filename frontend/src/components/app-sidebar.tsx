@@ -39,7 +39,7 @@ const data = {
       items: [
         {
           title: "Quizzes",
-          url: "/admin/quizzes",
+          url: "/admin/quizzes/list",
         },
         {
           title: "Users",

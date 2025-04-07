@@ -2,6 +2,7 @@ import { QuizData, columns } from "./columns"
 import { DataTable } from "./data-table"
 import { useEffect,  useState } from "react";
 import axios from "axios";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button"
 
 
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button"
 export default function QuizzesAdmin() {
 
     const [ allQuizzes, setAllQuizzes ] = useState([])
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -39,7 +41,7 @@ export default function QuizzesAdmin() {
             <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-5xl p-6">
                 Quizzes
             </h1>
-            <Button className="mx-6">New quiz</Button>
+            <Button className="mx-6" onClick={() => navigate("/admin/quizzes/new")}>New quiz</Button>
         </div>
 
         <div className="container mx-auto p-6">

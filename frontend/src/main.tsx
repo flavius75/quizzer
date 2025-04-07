@@ -13,7 +13,8 @@ import Quizzes from './views/app/Quizzes';
 import NotFound from './components/NotFound';
 import DashboardAdmin from './views/admin/DashboardAdmin';
 import UsersAdmin from './views/admin/UsersAdmin';
-import QuizzesAdmin from './views/admin/QuizzesAdmin';
+import QuizzesAdmin from './views/admin/quizzes/QuizzesAdmin';
+import NewQuizz from './views/admin/quizzes/NewQuizz';
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -40,7 +41,10 @@ createRoot(document.getElementById('root')!).render(
         <Route element={<AdminLayout />} >
           <Route path="dashboard" element={<DashboardAdmin />} />
           <Route path="users" element={<UsersAdmin />} />
-          <Route path="quizzes" element={<QuizzesAdmin />} />
+          <Route path="quizzes" >
+            <Route path="list" element={<QuizzesAdmin />} />
+            <Route path="new" element={<NewQuizz />} />
+          </Route>
         </Route>
       </Route>
 
