@@ -3,13 +3,27 @@ from sqlalchemy.dialects.postgresql import JSONB
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-from pydantic import Json
+from pydantic import Json, EmailStr, validator
+
+
+class UserCreate(SQLModel):
+    username: str
+    email: EmailStr
+    password: str
+
+    @validator("password")
+    def password_strength(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
 
 # Role Enum
 class UserRole(str, Enum):
     player = "player"
     creator = "creator"
     admin = "admin"
+
 
 # Quiz Type Enum
 class QuizType(str, Enum):
@@ -19,12 +33,14 @@ class QuizType(str, Enum):
     poll = "poll"
     true_false = "true_false"
 
+
 class UserRead(SQLModel):
     id: Optional[int]
     username: str
     email: str
     role: UserRole
     score: int
+
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -36,13 +52,16 @@ class User(SQLModel, table=True):
 
     quizzes: List["Quiz"] = Relationship(back_populates="creator")
 
+
 class Quiz(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     tag: int = Field(nullable=False, index=True)
     title: str = Field(index=True, nullable=False)
     category: str = Field(nullable=False)  # Use predefined category values in frontend
     type: QuizType = Field(nullable=False)
-    questions: Json = Field(nullable=False, sa_type=JSONB)  # Store as JSONB in PostgreSQL
+    questions: Json = Field(
+        nullable=False, sa_type=JSONB
+    )  # Store as JSONB in PostgreSQL
     creator_id: int = Field(foreign_key="user.id")
     creation_date: datetime = Field(default_factory=datetime.utcnow)
 
@@ -55,7 +74,7 @@ class Quiz(SQLModel, table=True):
 class QuizPreview(SQLModel):
     id: Optional[int]
     tag: int
-    title: str 
+    title: str
     category: str
     type: QuizType
     creator: Optional[UserRead]

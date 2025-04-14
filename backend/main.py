@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.auth import router as auth_router
 from routes.users import router as users_router
 from routes.quizzes import router as quizzes_router
+from logger import setup_logging
+
+setup_logging()
 
 app = FastAPI()
 
@@ -31,10 +34,5 @@ app.include_router(quizzes_router, prefix="/quizzes", tags=["Quizzes"])
 
 
 @app.get("/hello")
-def hello() :
+def hello():
     return {"message": "Hello"}
-
-
-
-
-
