@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
-from auth import get_current_user, oauth2_scheme, verify_token
-from models import User, UserRead  # Assuming you have a User model
+from app.auth import get_current_user, oauth2_scheme, verify_token
+from app.models import User, UserRead, UserReadPublic  # Assuming you have a User model
 from sqlmodel import Session, select
-from db.database import get_session  # Database session dependency
+from app.db.database import get_session  # Database session dependency
 from typing import List
 
 
@@ -17,7 +17,7 @@ def get_users(
     return users
 
 
-@router.get("/leaderboard", response_model=List[UserRead])
+@router.get("/leaderboard", response_model=List[UserReadPublic])
 def get_leaderboard(
     user: User = Depends(get_current_user), session: Session = Depends(get_session)
 ):

@@ -5,8 +5,8 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
-from models import User
-from db.database import get_session
+from app.models import User
+from app.db.database import get_session
 import os
 from dotenv import load_dotenv
 

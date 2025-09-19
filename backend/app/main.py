@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes.auth import router as auth_router
-from routes.users import router as users_router
-from routes.quizzes import router as quizzes_router
-from logger import setup_logging
+from app.routes.auth import router as auth_router
+from app.routes.users import router as users_router
+from app.routes.quizzes import router as quizzes_router
+from app.helpers.logger import setup_logging
+import uvicorn
 
 setup_logging()
 
@@ -36,3 +37,7 @@ app.include_router(quizzes_router, prefix="/quizzes", tags=["Quizzes"])
 @app.get("/hello")
 def hello():
     return {"message": "Hello"}
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
