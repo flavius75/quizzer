@@ -10,6 +10,10 @@ from app.db.database import get_session
 import os
 from dotenv import load_dotenv
 from fastapi.security import HTTPBearer
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 

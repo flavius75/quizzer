@@ -34,9 +34,9 @@ app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(quizzes_router, prefix="/quizzes", tags=["Quizzes"])
 
 
-@app.get("/hello")
-def hello():
-    return {"message": "Hello"}
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
 
 
 if __name__ == "__main__":

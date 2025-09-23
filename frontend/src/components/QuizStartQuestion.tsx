@@ -40,6 +40,7 @@ interface GameAnswer {
 
 interface UserAnswer {
     question_id: number;
+    play_id:number;
     answer_id?: number;
     text_response?: string;
 }
@@ -178,7 +179,8 @@ export default function QuizStartQuestion({ quizId, onQuizComplete }: QuizStartQ
 
         // Save current answer
         const newAnswer: UserAnswer = {
-            question_id: currentQuestion.id
+            question_id: currentQuestion.id, 
+            play_id: gameSession.play_session_id
         };
 
         if (currentQuestion.question_type === 'fill_blank') {

@@ -15,7 +15,7 @@ from typing import Dict
 from uuid import UUID
 from sqlalchemy import func, desc
 from app.auth import get_current_user, get_current_user_optional_bearer
-from sqlalchemy import or_  # Add this for the OR condition
+from sqlalchemy import or_  
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -156,7 +156,7 @@ def add_question_to_quiz(
 async def start_quiz_session(
     quiz_id: int,
     session: Session = Depends(get_session),
-    current_user: Optional[User] = None  # We'll handle auth manually
+    current_user: Optional[User] = None 
 ):
     """Start a new quiz session"""
     # 1. Validate quiz exists and is accessible

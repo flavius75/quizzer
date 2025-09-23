@@ -30,7 +30,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/quizzer
       - SECRET_KEY=${SECRET_KEY}
       - DEBUG=${DEBUG:-false}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,https://yourdomain.com}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,https://quizzer.flaviusbica.com}
     ports:
       - "8000:8000"
     depends_on:

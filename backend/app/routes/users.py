@@ -4,6 +4,10 @@ from app.models import User, UserRead, UserReadPublic  # Assuming you have a Use
 from sqlmodel import Session, select
 from app.db.database import get_session  # Database session dependency
 from typing import List
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 
 router = APIRouter()
@@ -21,7 +25,7 @@ def get_users(
 def get_leaderboard(
     user: User = Depends(get_current_user), session: Session = Depends(get_session)
 ):
-    users = session.exec(select(User).order_by(User.score.desc())).all()
+    users = session.exec(select(User).order_by(User.global_score.desc())).all()
     return users
 
 
