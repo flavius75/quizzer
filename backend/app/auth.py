@@ -9,7 +9,7 @@ from app.models import User
 from app.db.database import get_session
 import os
 from dotenv import load_dotenv
-
+from fastapi.security import HTTPBearer
 
 load_dotenv()
 
@@ -66,3 +66,28 @@ def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
+
+
+# Create optional auth scheme  
+oauth2_scheme_optional = HTTPBearer(auto_error=False)
+
+def get_current_user_optional_bearer(
+    credentials = Depends(oauth2_scheme_optional), 
+    db: Session = Depends(get_session)
+) -> Optional[User]:
+    """Get current user from Bearer token or None if not authenticated"""
+    try:
+        if not credentials:
+            return None
+            
+        token = credentials.credentials
+        payload = verify_token(token)
+        if not payload:
+            return None
+
+        user = db.exec(select(User).where(User.email == payload["sub"])).first()
+        return user
+    except Exception as e:
+        # Log the error but don't raise it (optional auth)
+        logger.debug(f"Optional auth failed: {e}")
+        return None

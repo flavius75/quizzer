@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.auth import get_current_user, oauth2_scheme
+from app.auth import get_current_user, oauth2_scheme, get_current_user_optional_bearer
 from app.models import (
     Quiz, Question, User, Answer, AnswerCreate, Play, PlayAnswer,
     QuizCreate, QuizRead, QuizReadWithQuestions, 
@@ -14,6 +14,8 @@ from datetime import datetime
 from typing import Dict
 from uuid import UUID
 from sqlalchemy import func, desc
+from app.auth import get_current_user, get_current_user_optional_bearer
+from sqlalchemy import or_  # Add this for the OR condition
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -34,11 +36,51 @@ def get_current_user_optional(token: str = Depends(oauth2_scheme)):
 # Get all public quizzes
 @router.get("/", response_model=List[QuizRead])
 def get_quizzes(
-    skip: int = 0, limit: int = 10, session: Session = Depends(get_session)
+    skip: int = 0, 
+    limit: int = 10, 
+    session: Session = Depends(get_session),
+    current_user: Optional[User] = Depends(get_current_user_optional_bearer)  # Optional auth
 ):
-    return session.exec(
-        select(Quiz).where(Quiz.visibility == 'public').offset(skip).limit(limit)
-    ).all()
+    """
+    Get quizzes based on user permissions:
+    - No user (guest): Only public quizzes
+    - Admin: All quizzes
+    - Creator: Public quizzes + their own private quizzes
+    - Player: Only public quizzes
+    """
+    
+    # Base query
+    query = select(Quiz)
+    
+    if not current_user:
+        # Guest user - only public quizzes
+        query = query.where(Quiz.visibility == 'public')
+        logger.info("Guest user requesting quizzes - returning public only")
+        
+    elif current_user.role == "admin":
+        # Admin - all quizzes (no additional filter needed)
+        logger.info(f"Admin {current_user.username} requesting all quizzes")
+        
+    elif current_user.role == "creator":
+        # Creator - public quizzes OR their own private quizzes
+        from sqlalchemy import or_
+        query = query.where(
+            or_(
+                Quiz.visibility == 'public',
+                Quiz.creator_id == current_user.id
+            )
+        )
+        logger.info(f"Creator {current_user.username} requesting public + own private quizzes")
+        
+    else:
+        # Regular player - only public quizzes
+        query = query.where(Quiz.visibility == 'public')
+        logger.info(f"Player {current_user.username} requesting public quizzes only")
+    
+    # Apply pagination and execute
+    quizzes = session.exec(query.offset(skip).limit(limit)).all()
+    
+    return quizzes
 
 # Get quiz by ID with questions (for playing)
 @router.get("/{quiz_id}", response_model=QuizReadWithQuestions)
@@ -70,7 +112,7 @@ def create_quiz(
         title=quiz_data.title,
         category=quiz_data.category,
         image=quiz_data.image,
-        is_public=(quiz_data.visibility == "public"),
+        visibility=(quiz_data.visibility == "public"),
         creator_id=current_user.id,
         sharing_link=str(uuid4()) if quiz_data.visibility == "private" else None
     )
