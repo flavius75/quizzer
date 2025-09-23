@@ -17,6 +17,15 @@ import QuizzesAdmin from './views/admin/quizzes/QuizzesAdmin';
 import NewQuizz from './views/admin/quizzes/NewQuizz';
 import './index.css'
 
+import axios from "axios";
+import { useAuthStore } from './store/authStore';
+
+// Restore auth state on app startup
+const authStore = useAuthStore.getState();
+if (authStore.user?.access_token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${authStore.user.access_token}`;
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

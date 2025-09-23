@@ -5,98 +5,169 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-  } from "@/components/ui/card"
+} from "@/components/ui/card"
 
-  import {
+import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuPortal,
-    DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 
-import {EllipsisVertical, Target, Play, ChevronRight} from 'lucide-react'
+import { EllipsisVertical, Users, Play, ChevronRight, Lock, Globe } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import {Link} from "react-router"
+import { Link } from "react-router"
 import { useQuizzesStore } from '@/store/quizStore';
-import { Quiz } from "@/types"
+import { Quiz, getQuestionCount } from "@/types"
 import { useAuthStore } from "@/store/authStore";
 
-
-function successRate(singleQuiz:Quiz ){
-    let correctQuestions = 0
-    let totalAttempts = 0
-    let successRate = 0
-
-    singleQuiz.questions.questionList.forEach((question) => {
-        totalAttempts += question.statistics.totalAttempts;
-        correctQuestions += question.statistics.correctAttempts;
-    })
-
-    successRate = Math.ceil((correctQuestions/totalAttempts) *100);
-    return successRate
+interface QuizCardProps {
+    singleQuiz: Quiz;
 }
 
-export default function QuizCard({singleQuiz} : {singleQuiz:Quiz}){
-    const {setSelectQuizToStart} = useQuizzesStore();
-     const { user } = useAuthStore();
+export default function QuizCard({ singleQuiz }: QuizCardProps) {
+    const { setSelectQuizToStart } = useQuizzesStore();
+    const { user } = useAuthStore();
 
-    const {id, title, questions} = singleQuiz;
-    const totalQuestions = questions.questionList.length;
-    const globalSuccessRate = successRate(singleQuiz)
+    const { id, title, category, creator, visibility, sharing_link } = singleQuiz;
+    const totalQuestions = getQuestionCount(singleQuiz);
+    
+    // Check if user can access this quiz
+    const canAccess = visibility=='public' || user || sharing_link;
+    
+    // Check if user can edit this quiz
+    const canEdit = user && (
+        user.user_role === "admin" || 
+        (user.user_role === "creator" && creator && creator.username === user.username)
+    );
 
+    const handleStartQuiz = () => {
+        if (canAccess) {
+            setSelectQuizToStart(singleQuiz);
+        }
+    };
 
-    return(
-        <Card>
+    const handleEdit = () => {
+        // Navigate to edit page (you can implement this)
+        console.log('Edit quiz:', id);
+    };
+
+    const handleDelete = () => {
+        // Implement delete functionality
+        console.log('Delete quiz:', id);
+    };
+
+    const getCategoryColor = (category?: string) => {
+        const colors = {
+            'Science': 'bg-blue-600',
+            'Technology': 'bg-green-600',
+            'History': 'bg-purple-600',
+            'Geography': 'bg-yellow-600',
+            'General': 'bg-teal-600',
+            'Entertainment': 'bg-pink-600',
+        };
+        return colors[category as keyof typeof colors] || 'bg-gray-600';
+    };
+
+    return (
+        <Card className="w-80 hover:shadow-lg transition-all duration-300 group">
             <CardHeader>
-                <div className="relative bg-teal-600 w-full h-32 flex justify-center items-center rounded-[5px]">
-                    {user?.user_role=="admin" &&
-
-                    <div className="absolute cursor-pointer top-3 right-3">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">    
-                                    <EllipsisVertical  color="white" size={24}/>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
-                                <DropdownMenuItem>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                <div className={`relative ${getCategoryColor(category)} w-full h-32 flex justify-center items-center rounded-[5px] overflow-hidden`}>
+                    {/* Quiz Category/Type Indicator */}
+                    <div className="absolute top-3 left-3 bg-black/20 backdrop-blur-sm rounded-full px-2 py-1">
+                        <span className="text-white text-xs font-medium">
+                            {category || 'General'}
+                        </span>
                     </div>
-                    }
+                    
+                    {/* Privacy Indicator */}
+                    <div className="absolute top-3 right-3 bg-black/20 backdrop-blur-sm rounded-full p-1">
+                        {visibility=='public' ? (
+                            <Globe size={16} color="white" title="Public Quiz" />
+                        ) : (
+                            <Lock size={16} color="white" title="Private Quiz" />
+                        )}
+                    </div>
+
+                    {/* Admin/Creator Actions */}
+                    {canEdit && (
+                        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="bg-black/20 backdrop-blur-sm hover:bg-black/30">    
+                                        <EllipsisVertical color="white" size={20}/>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={handleEdit}>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                                        Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    )}
+
+                    {/* Quiz Title Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                        <h3 className="text-white font-semibold text-lg truncate">{title}</h3>
+                    </div>
                 </div>                
             </CardHeader>
-            <CardContent>
-                <span className="text-lg font-bold">{title}</span>
-                <p className="text-base font-light">{totalQuestions} Questions</p>
-            </CardContent>
-            <CardFooter>
-                
-                <div className="flex gap-3">
-                    <div className="flex gap-1 items-center">
-                        <Target size={28} />
-                        <span className="text-sm">Success rate: {globalSuccessRate}%</span>
-                    </div>
+            
+            <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 flex items-center gap-1">
+                        <Play size={16} />
+                        {totalQuestions} Question{totalQuestions !== 1 ? 's' : ''}
+                    </span>
+                    
+                    {creator && (
+                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                            <Users size={14} />
+                            {creator.username}
+                        </span>
+                    )}
+                </div>
 
-                    {/* <div className="bg-teal-600 rounded-full w-9 h-9 flex items-center justify-center">
-                        <Play color="white" size={18}/>
-                    </div> */}
-                    <div onClick={() => setSelectQuizToStart(singleQuiz)}>    
-                        <Link to={'/start-quiz/'}>
-                            <Button variant="outline" size="icon">
-                                <ChevronRight />
+                {/* Access Status */}
+                {!canAccess && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
+                        <p className="text-orange-700 text-sm">
+                            <Lock size={14} className="inline mr-1" />
+                            Login required to access this quiz
+                        </p>
+                    </div>
+                )}
+            </CardContent>
+            
+            <CardFooter>
+                <div className="w-full">
+                    {canAccess ? (
+                        <Link to="/start-quiz" className="w-full">
+                            <Button 
+                                onClick={handleStartQuiz}
+                                className="w-full bg-teal-600 hover:bg-teal-700 text-white group/btn"
+                                size="sm"
+                            >
+                                <Play size={16} className="mr-2" />
+                                Start Quiz
+                                <ChevronRight size={16} className="ml-2 group-hover/btn:translate-x-1 transition-transform" />
                             </Button>
                         </Link>
-                    </div>
+                    ) : (
+                        <div className="w-full">
+                            <Button 
+                                disabled 
+                                variant="outline" 
+                                className="w-full"
+                                size="sm"
+                            >
+                                <Lock size={16} className="mr-2" />
+                                Login Required
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </CardFooter>
         </Card>
