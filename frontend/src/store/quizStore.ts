@@ -14,7 +14,7 @@ interface QuizState {
 
 export const useQuizzesStore = create<QuizState>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             allQuizzes: null,
             
             setAllQuizzes: (quizzes) => set({ allQuizzes: quizzes }),

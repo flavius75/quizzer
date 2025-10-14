@@ -2,7 +2,7 @@
 import QuizStartQuestion from "@/components/QuizStartQuestion";
 import QuizStartHeader from "@/components/QuizStartHeader";
 import { CircleX } from 'lucide-react';
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useQuizzesStore } from '@/store/quizStore';
 import { useNavigate } from "react-router";
 

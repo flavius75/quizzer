@@ -1,110 +1,22 @@
-version: '3.8'
+# backend/Dockerfile
+FROM python:3.12-slim
 
-services:
-  # PostgreSQL Database
-  db:
-    image: postgres:16-alpine
-    container_name: quizzer-db
-    environment:
-      POSTGRES_DB: quizzer
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - quizz-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d quizzer"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+WORKDIR /app
 
-  # FastAPI Backend
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: quizzer-backend
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/quizzer
-      - SECRET_KEY=${SECRET_KEY}
-      - DEBUG=${DEBUG:-false}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,https://yourdomain.com}
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - quizz-network
-    volumes:
-      - ./backend:/app
-    command: >
-      sh -c "alembic upgrade head && 
-             uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+# Copy requirements first for better caching
+COPY requirements.txt .
 
-  # React Frontend
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: quizzer-frontend
-    environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
-      - NODE_ENV=production
-    ports:
-      - "3000:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - quizz-network
-    restart: unless-stopped
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-  # Nginx Reverse Proxy with SSL
-  nginx:
-    image: nginx:alpine
-    container_name: quizzer-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-      - certbot_certs:/etc/letsencrypt
-      - certbot_www:/var/www/certbot
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - quizz-network
-    restart: unless-stopped
+# Copy application code
+COPY . .
 
-  # Certbot for SSL certificates
-  certbot:
-    image: certbot/certbot
-    container_name: quizzer-certbot
-    volumes:
-      - certbot_certs:/etc/letsencrypt
-      - certbot_www:/var/www/certbot
-    command: certonly --webroot --webroot-path=/var/www/certbot --email ${SSL_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN}
-    depends_on:
-      - nginx
-    profiles:
-      - ssl-setup
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
 
-volumes:
-  postgres_data:
-  certbot_certs:
-  certbot_www:
+# Expose port
+EXPOSE 8000
 
-networks:
-  quizz-network:
-    driver: bridge
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

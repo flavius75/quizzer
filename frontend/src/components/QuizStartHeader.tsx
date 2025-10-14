@@ -57,9 +57,9 @@ export default function QuizStartHeader({ parentTimer }: QuizStartHeaderProps) {
                     <div className="flex items-center gap-2">
                         <h2 className="font-bold text-2xl">{title}</h2>
                         {visibility === 'private' ? (
-                            <Lock size={20} className="text-orange-500" title="Private Quiz" />
+                            <Lock size={20} className="text-orange-500" aria-label="Private Quiz" />
                         ) : (
-                            <Globe size={20} className="text-green-500" title="Public Quiz" />
+                            <Globe size={20} className="text-green-500" aria-label="Public Quiz" />
                         )}
                     </div>
                     

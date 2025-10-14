@@ -6,7 +6,6 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogDescription,
     DialogHeader,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -177,7 +176,9 @@ export default function QuizStartQuestion({ quizId, onQuizComplete }: QuizStartQ
         const currentQuestion = getCurrentQuestion();
         if (!currentQuestion) return;
 
-        // Save current answer
+
+        if (!gameSession) return;
+
         const newAnswer: UserAnswer = {
             question_id: currentQuestion.id, 
             play_id: gameSession.play_session_id

@@ -25,7 +25,7 @@ import {
   } from "@/components/ui/dropdown-menu"
   import { ChevronDown } from "lucide-react";
   import { useAuthStore } from "@/store/authStore";
-    import { Link, useNavigate } from "react-router";
+    import { useNavigate } from "react-router";
     import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function AdminLayout() {
@@ -62,7 +62,7 @@ export default function AdminLayout() {
         </Breadcrumb>
     </div>
     <div className="flex items-center gap-4">
-        <h2>Hello {user.username}</h2>
+        <h2>Hello {user?.username}</h2>
         <Avatar>
             <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback>CN</AvatarFallback>
@@ -75,7 +75,7 @@ export default function AdminLayout() {
                 <DropdownMenuItem onClick={() => navigate("/profile")}>Profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/")}>Quizzes</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/user/leaderboard")}>Leaderboard</DropdownMenuItem>
-                {user.user_role == "admin" && 
+                {user?.user_role == "admin" && 
                 <DropdownMenuItem onClick={() => navigate("/admin/dashboard")}>Administration</DropdownMenuItem>
                 }
                 <DropdownMenuItem onClick={handleLogout}>Log Out</DropdownMenuItem>

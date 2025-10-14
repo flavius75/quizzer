@@ -1,10 +1,8 @@
 import {
     Card,
     CardContent,
-    CardDescription,
     CardFooter,
     CardHeader,
-    CardTitle,
 } from "@/components/ui/card"
 
 import {
@@ -83,9 +81,9 @@ export default function QuizCard({ singleQuiz }: QuizCardProps) {
                     {/* Privacy Indicator */}
                     <div className="absolute top-3 right-3 bg-black/20 backdrop-blur-sm rounded-full p-1">
                         {visibility=='public' ? (
-                            <Globe size={16} color="white" title="Public Quiz" />
+                            <Globe size={16} color="white" aria-label="Public Quiz" />
                         ) : (
-                            <Lock size={16} color="white" title="Private Quiz" />
+                            <Lock size={16} color="white" aria-label="Private Quiz" />
                         )}
                     </div>
 

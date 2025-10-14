@@ -79,7 +79,7 @@ export interface GameQuestion {
     text: string;
     image?: string;
     question_type: 'single_choice' | 'multiple_choice' | 'fill_blank' | 'true_false';
-    answers: GameAnswer[]; // No is_correct field exposed during gameplay
+    answers: GameAnswer[]; 
 }
 
 // Game Answer (answers without is_correct exposed)
