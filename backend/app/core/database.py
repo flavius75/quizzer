@@ -1,11 +1,7 @@
 from sqlmodel import SQLModel, create_engine, Session
-from dotenv import load_dotenv
-import os
+from app.core.config import settings
 
-load_dotenv()
-
-
-engine = create_engine(os.environ.get("DATABASE_URL"))
+engine = create_engine(settings.DATABASE_URL)
 
 
 def init_db():

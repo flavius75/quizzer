@@ -1,15 +1,9 @@
-from sqlmodel import Session, create_engine
+from sqlmodel import Session, select
 from app.models import User, Quiz, Question, Answer
-from app.auth import hash_password
+from app.core.auth import hash_password
+from app.core.database import engine
 from datetime import datetime
 from uuid import uuid4
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Database connection
-engine = create_engine(os.environ.get("DATABASE_URL"))
 
 def create_sample_data():
     """Create comprehensive test data"""
@@ -61,7 +55,7 @@ def create_sample_data():
                 "title": "Private Science Quiz",
                 "category": "Science",
                 "description": "Advanced science questions",
-                "visibility": 'public',
+                "visibility": 'private',
                 "sharing_link": str(uuid4()),
                 "creator": users[0]  # alice_creator
             }
@@ -74,6 +68,7 @@ def create_sample_data():
                 title=quiz_data["title"],
                 category=quiz_data["category"],
                 description=quiz_data.get("description"),
+                visibility=quiz_data.get("visibility", "public"),
                 sharing_link=quiz_data.get("sharing_link"),
                 time_limit=300,  # 5 minutes
                 creator_id=quiz_data["creator"].id,
@@ -232,7 +227,7 @@ def create_sample_data():
             
             # Count questions
             question_count = len(session.exec(
-                session.query(Question).filter(Question.quiz_id == quiz.id)
+                select(Question).where(Question.quiz_id == quiz.id)
             ).all())
             print(f"  - Questions: {question_count}")
         

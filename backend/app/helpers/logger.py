@@ -1,9 +1,12 @@
-import logging
+import os
 from logging.config import dictConfig
 
-LOG_FILE = "app.log"
+LOG_DIR = os.environ.get("LOG_DIR", "logs")
+LOG_FILE = os.path.join(LOG_DIR, "app.log")
+
 
 def setup_logging():
+    os.makedirs(LOG_DIR, exist_ok=True)
     logging_config = {
         "version": 1,
         "disable_existing_loggers": False,
