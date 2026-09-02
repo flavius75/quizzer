@@ -33,9 +33,9 @@ export default function AdminLayout() {
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
   
-    const handleLogout = () => {
-      logout();
-      navigate("/"); 
+    const handleLogout = async () => {
+      await logout();
+      navigate("/");
     };
 
     return(

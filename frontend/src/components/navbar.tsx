@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { Link, useNavigate } from "react-router";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { api } from "@/lib/api";
 
 import {
   DropdownMenu,
@@ -28,12 +27,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch (err) {
-      console.error("Logout request failed (clearing local session anyway):", err);
-    }
-    logout();
+    await logout();
     navigate("/");
     setOpen(false);
   };

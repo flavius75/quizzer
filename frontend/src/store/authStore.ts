@@ -1,12 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User } from "@/types";
+import { api } from "@/lib/api";
 
 
 interface AuthState {
   user: User | null;
   login: (userData: User) => void;
-  logout: () => void;
+  /** Clears local state only - does not touch the server-side cookie. Used
+   * internally (e.g. by the 401 interceptor) where a session is already
+   * known to be dead. UI code should call `logout()` instead. */
+  clearLocal: () => void;
+  /** The one logout path the UI should call: invalidates the httpOnly
+   * cookie server-side, then clears local state - so every "log out"
+   * button behaves the same instead of some only clearing local state. */
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -14,7 +22,15 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       login: (userData) => set({ user: userData }),
-      logout: () => set({ user: null }),
+      clearLocal: () => set({ user: null }),
+      logout: async () => {
+        try {
+          await api.post("/auth/logout");
+        } catch (err) {
+          console.error("Logout request failed (clearing local session anyway):", err);
+        }
+        set({ user: null });
+      },
     }),
     {
       name: "auth-storage",
