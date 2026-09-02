@@ -12,6 +12,7 @@ class QuizBase(SQLModel):
     category: Optional[str] = None
     image: Optional[str] = None
     visibility: str = "public"  # public | private
+    time_limit: Optional[int] = None  # seconds
 
 
 class QuizCreate(QuizBase):
@@ -23,6 +24,7 @@ class QuizUpdate(SQLModel):
     category: Optional[str] = None
     image: Optional[str] = None
     visibility: Optional[str] = None
+    time_limit: Optional[int] = None
 
 
 class QuizRead(QuizBase):
@@ -141,6 +143,7 @@ class QuizReadWithQuestions(SQLModel):
     category: Optional[str] = None
     image: Optional[str] = None
     visibility: str
+    time_limit: Optional[int] = None
     creator_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime

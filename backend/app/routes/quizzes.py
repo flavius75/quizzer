@@ -98,6 +98,7 @@ def create_quiz(
         category=quiz_data.category,
         image=quiz_data.image,
         visibility=quiz_data.visibility,
+        time_limit=quiz_data.time_limit,
         creator_id=current_user.id,
         sharing_link=str(uuid4()) if quiz_data.visibility == "private" else None,
     )

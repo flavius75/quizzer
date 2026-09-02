@@ -148,6 +148,7 @@ export default function NewQuizz() {
                 category: data.category,
                 description: data.description,
                 visibility: data.visibility,
+                time_limit: data.time_limit,
             });
 
             quizId = quizResponse.data.id;

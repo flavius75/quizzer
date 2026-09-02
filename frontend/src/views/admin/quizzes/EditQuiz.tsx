@@ -17,6 +17,7 @@ export default function EditQuiz() {
     const [title, setTitle] = useState("");
     const [category, setCategory] = useState("");
     const [visibility, setVisibility] = useState<"public" | "private">("public");
+    const [timeLimit, setTimeLimit] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export default function EditQuiz() {
                 setTitle(response.data.title);
                 setCategory(response.data.category || "");
                 setVisibility(response.data.visibility || "public");
+                setTimeLimit(response.data.time_limit ? String(response.data.time_limit) : "");
             } catch (err) {
                 setError(getErrorMessage(err, "Failed to load quiz"));
             } finally {
@@ -43,7 +45,12 @@ export default function EditQuiz() {
         setIsSaving(true);
         setError(null);
         try {
-            await api.patch(`/quizzes/${quizId}`, { title, category, visibility });
+            await api.patch(`/quizzes/${quizId}`, {
+                title,
+                category,
+                visibility,
+                time_limit: timeLimit === "" ? null : Number(timeLimit),
+            });
             navigate("/admin/quizzes/list");
         } catch (err) {
             setError(getErrorMessage(err, "Failed to save quiz"));
@@ -91,6 +98,17 @@ export default function EditQuiz() {
                         <option value="public">Public</option>
                         <option value="private">Private</option>
                     </select>
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="time_limit">Time Limit (seconds)</Label>
+                    <Input
+                        id="time_limit"
+                        type="number"
+                        min={0}
+                        placeholder="No time limit"
+                        value={timeLimit}
+                        onChange={(e) => setTimeLimit(e.target.value)}
+                    />
                 </div>
 
                 {error && <p className="text-red-600 text-sm">{error}</p>}

@@ -9,7 +9,7 @@ from uuid import UUID
 
 from sqlmodel import Session, select
 
-from app.models import Quiz, User
+from app.models import User
 
 
 def _make_quiz_with_question(owner, question_type, answers, visibility="public"):
@@ -50,6 +50,28 @@ def test_visibility_is_stored_and_returned_as_a_string(make_user):
     )
     assert response.status_code == 200
     assert response.json()["visibility"] == "private"
+
+
+def test_time_limit_can_be_set_at_creation_and_carried_into_the_started_session(make_user):
+    owner = make_user(username="owner", role="creator")
+    create_response = owner.post(
+        "/quizzes/", json={"title": "Timed quiz", "visibility": "public", "time_limit": 120}
+    )
+    assert create_response.status_code == 200
+    assert create_response.json()["time_limit"] == 120
+
+    quiz_id = create_response.json()["id"]
+    question = owner.post(
+        f"/quizzes/{quiz_id}/questions",
+        json={"text": "Q?", "question_type": "true_false"},
+    ).json()
+    owner.post(
+        f"/quizzes/{quiz_id}/questions/{question['id']}/answers",
+        json={"text": "True", "is_correct": True},
+    )
+
+    start_response = owner.post(f"/quizzes/{quiz_id}/start")
+    assert start_response.json()["quiz"]["time_limit"] == 120
 
 
 # ---------------------------------------------------------------------------
@@ -231,18 +253,13 @@ def test_submitting_to_an_unknown_session_404s(make_user):
 
 
 def test_expired_time_limit_closes_the_session_with_zero_score(make_user, db_engine):
-    """time_limit can't be set through any API endpoint today (neither
-    QuizCreate nor QuizUpdate exposes it) - set it directly via the DB, the
-    only way it's currently reachable outside of seed_database.py."""
     owner = make_user(username="owner", role="creator")
     quiz, question, answer_ids = _make_quiz_with_question(
         owner, "single_choice", [("Right", True)]
     )
-    with Session(db_engine) as db:
-        db_quiz = db.exec(select(Quiz).where(Quiz.id == quiz["id"])).first()
-        db_quiz.time_limit = 1
-        db.add(db_quiz)
-        db.commit()
+    patch_response = owner.patch(f"/quizzes/{quiz['id']}", json={"time_limit": 1})
+    assert patch_response.status_code == 200
+    assert patch_response.json()["time_limit"] == 1
 
     start = owner.post(f"/quizzes/{quiz['id']}/start")
     session_uuid = start.json()["session_uuid"]
