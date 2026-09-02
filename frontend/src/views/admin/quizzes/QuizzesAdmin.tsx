@@ -1,7 +1,7 @@
 import { QuizData, columns } from "./columns"
 import { DataTable } from "./data-table"
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { api, getErrorMessage } from "@/lib/api";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button"
 import { Quiz } from "@/types";
@@ -17,10 +17,9 @@ export default function QuizzesAdmin() {
             try {
                 setIsLoading(true);
                 setError(null);
-                
-                // Use the regular quizzes endpoint, not preview (which doesn't exist)
-                const response = await axios.get('http://127.0.0.1:8000/quizzes/');
-                
+
+                const response = await api.get("/quizzes/");
+
                 // Transform the data to match the table structure
                 const transformedQuizzes: QuizData[] = response.data.map((quiz: Quiz) => ({
                     id: quiz.id,
@@ -39,11 +38,10 @@ export default function QuizzesAdmin() {
                     questions_count: quiz.questions?.length || 0,
                     uuid: quiz.uuid
                 }));
-                
+
                 setAllQuizzes(transformedQuizzes);
-            } catch (error: any) {
-                console.error('Failed to fetch quizzes:', error);
-                setError(error.response?.data?.detail || 'Failed to load quizzes');
+            } catch (err) {
+                setError(getErrorMessage(err, "Failed to load quizzes"));
             } finally {
                 setIsLoading(false);
             }
@@ -54,14 +52,12 @@ export default function QuizzesAdmin() {
 
     const handleDeleteQuiz = async (quizId: number) => {
         if (!confirm('Are you sure you want to delete this quiz?')) return;
-        
+
         try {
-            await axios.delete(`http://127.0.0.1:8000/quizzes/${quizId}`);
-            // Remove from local state
+            await api.delete(`/quizzes/${quizId}`);
             setAllQuizzes(prev => prev.filter(quiz => quiz.id !== quizId));
-        } catch (error: any) {
-            console.error('Failed to delete quiz:', error);
-            alert('Failed to delete quiz: ' + (error.response?.data?.detail || 'Unknown error'));
+        } catch (err) {
+            alert(getErrorMessage(err, "Failed to delete quiz"));
         }
     };
 

@@ -8,6 +8,7 @@ import AdminGuard from './components/AdminGuard';
 import AdminLayout from './views/admin/AdminLayout';
 import UserGuard from './components/UserGuard';
 import { LoginForm } from './components/login-form';
+import { RegisterForm } from './components/register-form';
 import Leaderboard from './views/app/Leaderboard';
 import Quizzes from './views/app/Quizzes';
 import NotFound from './components/NotFound';
@@ -15,19 +16,16 @@ import DashboardAdmin from './views/admin/DashboardAdmin';
 import UsersAdmin from './views/admin/UsersAdmin';
 import QuizzesAdmin from './views/admin/quizzes/QuizzesAdmin';
 import NewQuizz from './views/admin/quizzes/NewQuizz';
+import EditQuiz from './views/admin/quizzes/EditQuiz';
+import ErrorBoundary from './components/ErrorBoundary';
 import './index.css'
 
-import axios from "axios";
-import { useAuthStore } from './store/authStore';
-
-// Restore auth state on app startup
-const authStore = useAuthStore.getState();
-if (authStore.user?.access_token) {
-  axios.defaults.headers.common['Authorization'] = `Bearer ${authStore.user.access_token}`;
-}
+// The session lives in an httpOnly cookie sent automatically by the browser
+// (see src/lib/api.ts) - there is no client-side token to restore here.
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ErrorBoundary>
     <BrowserRouter>
     <Routes>
       <Route  element={<AppLayout />}>
@@ -37,7 +35,7 @@ createRoot(document.getElementById('root')!).render(
 
       <Route path="auth" element={<AuthLayout />}>
         <Route path="login" element={<LoginForm />} />
-        {/* <Route path="register" element={<Register />} /> */}
+        <Route path="register" element={<RegisterForm />} />
       </Route>
 
       <Route path="user" element={<UserGuard />}>
@@ -53,6 +51,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="quizzes" >
             <Route path="list" element={<QuizzesAdmin />} />
             <Route path="new" element={<NewQuizz />} />
+            <Route path="edit/:quizId" element={<EditQuiz />} />
           </Route>
         </Route>
       </Route>
@@ -60,5 +59,6 @@ createRoot(document.getElementById('root')!).render(
       <Route path='*' element={<NotFound />} />
     </Routes>
     </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )

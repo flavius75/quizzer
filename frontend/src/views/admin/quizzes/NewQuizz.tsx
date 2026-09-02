@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react"
 import { useNavigate } from "react-router"
-import axios from "axios"
+import { api, getErrorMessage } from "@/lib/api"
 import { Plus, Save, Trash2, ArrowLeft } from "lucide-react"
 import {
     Select,
@@ -139,22 +139,23 @@ export default function NewQuizz() {
         setIsSubmitting(true);
         setError(null);
 
+        let quizId: number | undefined;
+
         try {
             // 1. Create the quiz
-            const quizResponse = await axios.post('http://127.0.0.1:8000/quizzes/', {
+            const quizResponse = await api.post('/quizzes/', {
                 title: data.title,
                 category: data.category,
                 description: data.description,
                 visibility: data.visibility,
             });
 
-            const quizId = quizResponse.data.id;
+            quizId = quizResponse.data.id;
 
             // 2. Create questions and answers
             for (const questionData of questions) {
-                // Create question
-                const questionResponse = await axios.post(
-                    `http://127.0.0.1:8000/quizzes/${quizId}/questions`,
+                const questionResponse = await api.post(
+                    `/quizzes/${quizId}/questions`,
                     {
                         text: questionData.text,
                         image: questionData.image,
@@ -164,11 +165,10 @@ export default function NewQuizz() {
 
                 const questionId = questionResponse.data.id;
 
-                // Create answers for this question
                 for (const answerData of questionData.answers) {
                     if (answerData.text.trim()) { // Only create answers with text
-                        await axios.post(
-                            `http://127.0.0.1:8000/quizzes/${quizId}/questions/${questionId}/answers`,
+                        await api.post(
+                            `/quizzes/${quizId}/questions/${questionId}/answers`,
                             {
                                 text: answerData.text,
                                 image: answerData.image,
@@ -181,9 +181,17 @@ export default function NewQuizz() {
 
             // Success! Navigate to quiz list
             navigate('/admin/quizzes/list');
-        } catch (err: any) {
-            console.error('Failed to create quiz:', err);
-            setError(err.response?.data?.detail || 'Failed to create quiz');
+        } catch (err) {
+            // Best-effort cleanup: don't leave a half-built quiz behind if a
+            // later question/answer call fails partway through.
+            if (quizId) {
+                try {
+                    await api.delete(`/quizzes/${quizId}`);
+                } catch (cleanupErr) {
+                    console.error('Failed to clean up partially created quiz:', cleanupErr);
+                }
+            }
+            setError(getErrorMessage(err, 'Failed to create quiz. No partial quiz was saved.'));
         } finally {
             setIsSubmitting(false);
         }

@@ -1,9 +1,10 @@
 // Updated types.ts - Replace your entire file with this
 
 // User types
+// No `access_token` field: the JWT lives in an httpOnly cookie set by the
+// backend and is never exposed to client-side JS (see src/lib/api.ts).
 export interface User {
     username: string;
-    access_token: string;
     user_role: 'player' | 'creator' | 'admin';
     score: number; // This maps to global_score from backend
 }
@@ -92,7 +93,8 @@ export interface GameAnswer {
 // Answer submission for gameplay
 export interface PlayAnswerSubmission {
     question_id: number;
-    answer_id?: number; // For choice questions
+    answer_id?: number; // For single_choice / true_false questions
+    answer_ids?: number[]; // For multiple_choice questions (every box checked)
     text_response?: string; // For fill_blank questions
 }
 

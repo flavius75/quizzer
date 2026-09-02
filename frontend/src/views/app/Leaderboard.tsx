@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Trophy, Medal, Award } from 'lucide-react';
-import axios from 'axios';
+import { api, getErrorMessage } from '@/lib/api';
 import { useState, useEffect } from "react";
 import { UserReadPublic } from "@/types";
 
@@ -21,11 +21,10 @@ export default function Leaderboard() {
         const fetchUsers = async () => {
             try {
                 setIsLoading(true);
-                const response = await axios.get('http://127.0.0.1:8000/users/leaderboard');
+                const response = await api.get<UserReadPublic[]>('/users/leaderboard');
                 setAllUsers(response.data);
-            } catch (error: any) {
-                console.error('Failed to fetch users:', error);
-                setError(error.response?.data?.detail || 'Failed to load leaderboard');
+            } catch (err) {
+                setError(getErrorMessage(err, 'Failed to load leaderboard'));
             } finally {
                 setIsLoading(false);
             }

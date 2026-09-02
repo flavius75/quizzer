@@ -1,28 +1,18 @@
 import { useEffect } from 'react';
-import axios from 'axios';
+import { api } from '@/lib/api';
 import QuizCard from './QuizCard';
 import PlaceHolder from './PlaceHolder'
 import { useQuizzesStore } from '@/store/quizStore';
 import { Quiz } from '@/types';
 
 export default function QuizArea() {
-    const { allQuizzes, setAllQuizzes } = useQuizzesStore();
+    const { allQuizzes, setAllQuizzes, removeQuiz } = useQuizzesStore();
 
     useEffect(() => {
         const fetchQuizzes = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:8000/quizzes/');
-                
-                // Transform the data to match our frontend expectations
-                const quizzes: Quiz[] = response.data.map((quiz: any) => ({
-                    ...quiz,
-                    // Ensure we have the correct boolean field for frontend
-                    is_public: quiz.visibility === 'public',
-                    // Keep both for compatibility
-                    visibility: quiz.visibility
-                }));
-                
-                setAllQuizzes(quizzes);
+                const response = await api.get<Quiz[]>('/quizzes/');
+                setAllQuizzes(response.data);
             } catch (error) {
                 console.error('Failed to fetch quizzes:', error);
                 // Set empty array on error to show placeholder
@@ -54,19 +44,20 @@ export default function QuizArea() {
                     {allQuizzes.length} quiz{allQuizzes.length !== 1 ? 'es' : ''} available
                 </div>
             </div>
-            
-            {allQuizzes.length === 0 ? (   
+
+            {allQuizzes.length === 0 ? (
                 <div className="flex-col gap-3 p-4 mt-6 flex justify-center items-center h-full">
                     <PlaceHolder />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 justify-items-center sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {allQuizzes.map((singleQuiz) => (
-                        <QuizCard 
-                            key={singleQuiz.id} 
+                        <QuizCard
+                            key={singleQuiz.id}
                             singleQuiz={singleQuiz}
+                            onDeleted={removeQuiz}
                         />
-                    ))}                   
+                    ))}
                 </div>
             )}
         </div>

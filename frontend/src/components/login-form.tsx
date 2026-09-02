@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { useAuthStore } from "@/store/authStore";
 import { useNavigate } from "react-router";
 import { useState } from "react";
-import axios from "axios";
+import { api, getErrorMessage } from "@/lib/api";
 import { User } from "@/types";
 
 export function LoginForm({
@@ -33,8 +33,8 @@ export function LoginForm({
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/auth/login",
+      const response = await api.post(
+        "/auth/login",
         new URLSearchParams({
           username: email, // FastAPI OAuth2 uses 'username' field for email
           password: password,
@@ -44,57 +44,26 @@ export function LoginForm({
         }
       );
 
-      if (response.status === 200) {
-        const data = response.data;
-        
-        // Create user object matching your User type
-        const userData: User = {
-          username: data.username,
-          access_token: data.access_token,
-          user_role: data.user_role,
-          score: data.score || 0, // Map to score (frontend) from global_score (backend)
-        };
+      const data = response.data;
 
-        // Store user data in auth store
-        login(userData);
+      // The session token is set server-side as an httpOnly cookie; only
+      // display data comes back in the response body.
+      const userData: User = {
+        username: data.username,
+        user_role: data.user_role,
+        score: data.score || 0, // Map to score (frontend) from global_score (backend)
+      };
 
-        // Set default Authorization header for all future requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
+      login(userData);
 
-        console.log('Login successful:', userData);
-
-        // Redirect based on user role
-        if (userData.user_role === 'admin') {
-          navigate("/admin/dashboard");
-        } else {
-          navigate("/");
-        }
-      }
-    } catch (err: any) {
-      console.error("Login failed:", err);
-      
-      // Handle different error types
-      if (err.response) {
-        // Server responded with error status
-        const status = err.response.status;
-        const message = err.response.data?.detail || err.response.data?.message;
-        
-        if (status === 401) {
-          setError("Invalid email or password. Please try again.");
-        } else if (status === 422) {
-          setError("Please check your email format and try again.");
-        } else if (status >= 500) {
-          setError("Server error. Please try again later.");
-        } else {
-          setError(message || "Login failed. Please try again.");
-        }
-      } else if (err.request) {
-        // Request was made but no response received
-        setError("Unable to connect to server. Please check your connection.");
+      // Redirect based on user role
+      if (userData.user_role === 'admin') {
+        navigate("/admin/dashboard");
       } else {
-        // Something else happened
-        setError("An unexpected error occurred. Please try again.");
+        navigate("/");
       }
+    } catch (err) {
+      setError(getErrorMessage(err, "Login failed. Please try again."));
     } finally {
       setIsLoading(false);
     }
@@ -127,13 +96,9 @@ export function LoginForm({
               <div className="grid gap-3">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    Forgot your password?
-                  </a>
+                  {/* No "forgot password" flow yet - the backend has no
+                      password-reset endpoint, so this is deliberately not a
+                      link rather than a dead one. */}
                 </div>
                 <Input 
                   id="password" 
@@ -170,15 +135,7 @@ export function LoginForm({
             </div>
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
-              <a 
-                href="/auth/register" 
-                className="underline underline-offset-4 hover:text-teal-600"
-                onClick={(e) => {
-                  e.preventDefault();
-                  // You can implement registration or navigate to register page
-                  console.log('Navigate to register');
-                }}
-              >
+              <a href="/auth/register" className="underline underline-offset-4 hover:text-teal-600">
                 Sign up
               </a>
             </div>

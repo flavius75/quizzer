@@ -14,18 +14,22 @@ import {
 
 import { EllipsisVertical, Users, Play, ChevronRight, Lock, Globe } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { useQuizzesStore } from '@/store/quizStore';
 import { Quiz, getQuestionCount } from "@/types"
 import { useAuthStore } from "@/store/authStore";
+import { api, getErrorMessage } from "@/lib/api";
+import { getCategoryColor } from "@/lib/utils";
 
 interface QuizCardProps {
     singleQuiz: Quiz;
+    onDeleted?: (quizId: number) => void;
 }
 
-export default function QuizCard({ singleQuiz }: QuizCardProps) {
+export default function QuizCard({ singleQuiz, onDeleted }: QuizCardProps) {
     const { setSelectQuizToStart } = useQuizzesStore();
     const { user } = useAuthStore();
+    const navigate = useNavigate();
 
     const { id, title, category, creator, visibility, sharing_link } = singleQuiz;
     const totalQuestions = getQuestionCount(singleQuiz);
@@ -46,25 +50,17 @@ export default function QuizCard({ singleQuiz }: QuizCardProps) {
     };
 
     const handleEdit = () => {
-        // Navigate to edit page (you can implement this)
-        console.log('Edit quiz:', id);
+        navigate(`/admin/quizzes/edit/${id}`);
     };
 
-    const handleDelete = () => {
-        // Implement delete functionality
-        console.log('Delete quiz:', id);
-    };
-
-    const getCategoryColor = (category?: string) => {
-        const colors = {
-            'Science': 'bg-blue-600',
-            'Technology': 'bg-green-600',
-            'History': 'bg-purple-600',
-            'Geography': 'bg-yellow-600',
-            'General': 'bg-teal-600',
-            'Entertainment': 'bg-pink-600',
-        };
-        return colors[category as keyof typeof colors] || 'bg-gray-600';
+    const handleDelete = async () => {
+        if (!confirm(`Delete quiz "${title}"? This cannot be undone.`)) return;
+        try {
+            await api.delete(`/quizzes/${id}`);
+            onDeleted?.(id);
+        } catch (err) {
+            alert(getErrorMessage(err, "Failed to delete quiz"));
+        }
     };
 
     return (

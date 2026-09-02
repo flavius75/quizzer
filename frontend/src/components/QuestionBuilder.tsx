@@ -11,8 +11,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Plus, Trash2, Upload } from 'lucide-react'
-import { useState } from 'react'
+import { Plus, Trash2, Upload, X } from 'lucide-react'
+import { useRef, useState } from 'react'
 
 interface Answer {
     id: string;
@@ -38,6 +38,22 @@ export default function QuestionBuilder({ question, onChange }: QuestionBuilderP
     const [, setCorrectAnswerIndex] = useState(() => {
         return question.answers.findIndex(a => a.is_correct);
     });
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // No file-storage backend (S3, etc.) exists yet, so the image is
+    // embedded as a data URL directly in the `image` string field the
+    // backend already stores. Fine for small illustrative images; a real
+    // upload endpoint would be needed for anything larger.
+    const handleImageSelect = (file: File | undefined) => {
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            alert("Image must be under 5MB");
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => onChange({ image: reader.result as string });
+        reader.readAsDataURL(file);
+    };
 
     // Update question text
     const updateQuestionText = (text: string) => {
@@ -148,11 +164,37 @@ export default function QuestionBuilder({ question, onChange }: QuestionBuilderP
             {/* Image Upload (Optional) */}
             <div className="space-y-2">
                 <Label>Question Image (Optional)</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                    <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
-                </div>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => handleImageSelect(e.target.files?.[0])}
+                />
+                {question.image ? (
+                    <div className="relative inline-block">
+                        <img src={question.image} alt="Question preview" className="max-h-40 rounded-lg border" />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white shadow border"
+                            onClick={() => onChange({ image: undefined })}
+                        >
+                            <X size={14} />
+                        </Button>
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-teal-400"
+                    >
+                        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">Click to upload</p>
+                        <p className="text-xs text-gray-500">PNG, JPG, WEBP up to 5MB</p>
+                    </button>
+                )}
             </div>
 
             {/* Answer Options */}

@@ -5,20 +5,20 @@ import { CircleX } from 'lucide-react';
 import { useEffect } from "react";
 import { useQuizzesStore } from '@/store/quizStore';
 import { useNavigate } from "react-router";
+import type { GameResult } from "@/types";
 
 export default function StartQuiz() {
   const { selectQuizToStart } = useQuizzesStore();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     if (selectQuizToStart === null) {
       navigate('/');
     }
   }, [selectQuizToStart, navigate]);
 
-  const handleQuizComplete = (result: any) => {
+  const handleQuizComplete = (result: GameResult) => {
     console.log('Quiz completed with result:', result);
-    // You can add additional logic here like updating global scores, etc.
   };
 
   return (
