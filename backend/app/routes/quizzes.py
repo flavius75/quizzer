@@ -7,7 +7,7 @@ from app.schemas import (
     QuestionCreate, PlayAnswerCreate, QuestionRead, AnswerRead,
 )
 from sqlmodel import Session, select
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import uuid4, UUID
 import logging
 from datetime import datetime
@@ -257,11 +257,17 @@ async def start_quiz_session(
         },
     }
 
-    for question in questions:
-        answers = session.exec(
-            select(Answer).where(Answer.question_id == question.id)
-        ).all()
+    # One query for every answer across all questions instead of one query
+    # per question (N+1) - then group them in memory.
+    question_ids = [q.id for q in questions]
+    all_answers = session.exec(
+        select(Answer).where(Answer.question_id.in_(question_ids))
+    ).all()
+    answers_by_question: Dict[int, List[Answer]] = {}
+    for answer in all_answers:
+        answers_by_question.setdefault(answer.question_id, []).append(answer)
 
+    for question in questions:
         quiz_data["quiz"]["questions"].append({
             "id": question.id,
             "text": question.text,
@@ -273,7 +279,7 @@ async def start_quiz_session(
                     "text": answer.text,
                     "image": answer.image,
                     # Don't include is_correct!
-                } for answer in answers
+                } for answer in answers_by_question.get(question.id, [])
             ],
         })
 
@@ -306,6 +312,17 @@ async def submit_quiz_answers(
         select(Question).where(Question.quiz_id == play.quiz_id)
     ).all()
     valid_question_ids = {q.id for q in quiz_questions}
+    questions_by_id = {q.id: q for q in quiz_questions}
+
+    # One query for every answer of every question in this quiz, instead of
+    # 1-2 queries per submitted answer (N+1) - grouped in memory below.
+    all_answers = session.exec(
+        select(Answer).where(Answer.question_id.in_(valid_question_ids))
+    ).all()
+    answers_by_question: Dict[int, List[Answer]] = {}
+    for answer in all_answers:
+        answers_by_question.setdefault(answer.question_id, []).append(answer)
+    answers_by_id = {a.id: a for a in all_answers}
 
     # A submission past the time limit still closes out the play session
     # (so it doesn't stay orphaned with finished_at=None forever) but scores 0.
@@ -324,11 +341,9 @@ async def submit_quiz_answers(
     answered_question_ids = set()
 
     for answer_data in answers:
-        question = session.exec(
-            select(Question).where(Question.id == answer_data.question_id)
-        ).first()
+        question = questions_by_id.get(answer_data.question_id)
 
-        if not question or question.id not in valid_question_ids:
+        if not question:
             continue  # Skip invalid questions
 
         if question.id in answered_question_ids:
@@ -337,39 +352,27 @@ async def submit_quiz_answers(
         answered_question_ids.add(question.id)
         total_questions += 1
         is_correct = False
+        question_answers = answers_by_question.get(question.id, [])
 
         if question.question_type in ["single_choice", "true_false"]:
             if answer_data.answer_id:
-                correct_answer = session.exec(
-                    select(Answer).where(
-                        Answer.id == answer_data.answer_id,
-                        Answer.is_correct == True,
-                    )
-                ).first()
-                is_correct = correct_answer is not None
+                submitted = answers_by_id.get(answer_data.answer_id)
+                is_correct = (
+                    submitted is not None
+                    and submitted.question_id == question.id
+                    and submitted.is_correct
+                )
 
         elif question.question_type == "multiple_choice":
             submitted_ids = set(answer_data.answer_ids or ([answer_data.answer_id] if answer_data.answer_id else []))
-            correct_ids = {
-                a.id for a in session.exec(
-                    select(Answer).where(
-                        Answer.question_id == question.id,
-                        Answer.is_correct == True,
-                    )
-                ).all()
-            }
+            correct_ids = {a.id for a in question_answers if a.is_correct}
             is_correct = bool(submitted_ids) and submitted_ids == correct_ids
 
         elif question.question_type == "fill_blank":
             if answer_data.text_response:
-                correct_answer = session.exec(
-                    select(Answer).where(
-                        Answer.question_id == question.id,
-                        Answer.is_correct == True,
-                    )
-                ).first()
+                correct_answer = next((a for a in question_answers if a.is_correct), None)
 
-                if correct_answer:
+                if correct_answer and correct_answer.text:
                     is_correct = (
                         answer_data.text_response.lower().strip()
                         == correct_answer.text.lower().strip()

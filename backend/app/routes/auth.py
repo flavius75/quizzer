@@ -2,7 +2,14 @@ from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from app.core.auth import create_access_token, verify_password, hash_password, COOKIE_NAME
+from app.core.auth import (
+    create_access_token,
+    verify_password,
+    hash_password,
+    generate_csrf_token,
+    COOKIE_NAME,
+    CSRF_COOKIE_NAME,
+)
 from app.core.config import settings
 from app.models import User
 from app.schemas import UserCreate
@@ -16,11 +23,22 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
-def _set_auth_cookie(response: Response, token: str) -> None:
+def _set_auth_cookies(response: Response, token: str, csrf_token: str) -> None:
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
         httponly=True,
+        secure=not settings.DEBUG,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    # Deliberately NOT httponly: the frontend must be able to read this and
+    # echo it back in a header for the CSRF check in main.py to mean anything.
+    response.set_cookie(
+        key=CSRF_COOKIE_NAME,
+        value=csrf_token,
+        httponly=False,
         secure=not settings.DEBUG,
         samesite="lax",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
@@ -65,8 +83,9 @@ def login(
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    access_token = create_access_token(data={"sub": user.email})
-    _set_auth_cookie(response, access_token)
+    csrf_token = generate_csrf_token()
+    access_token = create_access_token(data={"sub": user.email, "csrf": csrf_token})
+    _set_auth_cookies(response, access_token, csrf_token)
     logger.info(f"User {user.username} logged successfully")
 
     return {
@@ -79,4 +98,5 @@ def login(
 @router.post("/logout")
 def logout(response: Response):
     response.delete_cookie(key=COOKIE_NAME, path="/")
+    response.delete_cookie(key=CSRF_COOKIE_NAME, path="/")
     return {"message": "Logged out"}

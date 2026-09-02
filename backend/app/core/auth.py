@@ -9,10 +9,21 @@ from app.models import User
 from app.core.database import get_session
 from app.core.config import settings
 import logging
+import secrets
 
 logger = logging.getLogger(__name__)
 
 COOKIE_NAME = "access_token"
+CSRF_COOKIE_NAME = "csrf_token"
+CSRF_HEADER_NAME = "x-csrf-token"
+
+# Requests carrying the access_token cookie use SameSite=Lax, which already
+# blocks the classic cross-site <form> CSRF (the cookie isn't sent on a
+# cross-site POST). This is a second, independent layer: the CSRF token is
+# bound into the JWT itself (not stored server-side) and mirrored into a
+# separate, JS-readable cookie; every unsafe request must echo it back in a
+# header, which a cross-site page cannot read even if it can trigger the
+# request. See main.py's CSRFMiddleware for enforcement.
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -37,6 +48,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def generate_csrf_token() -> str:
+    return secrets.token_urlsafe(32)
 
 
 def verify_token(token: str) -> Optional[dict]:

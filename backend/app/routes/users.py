@@ -32,7 +32,17 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/{user_id}", response_model=UserRead)
-def get_single_user(user_id: int, session: Session = Depends(get_session)):
+def get_single_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Full profile (email, role, score) is only available to the user
+    themselves or an admin - anyone else gets 403. Public info (username,
+    score) is served separately by GET /users/leaderboard."""
+    if current_user.id != user_id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Permission denied")
+
     statement = select(User).where(User.id == user_id)
     user = session.exec(statement).first()
     if not user:

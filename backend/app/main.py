@@ -7,6 +7,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
+from app.core.auth import verify_token, COOKIE_NAME, CSRF_COOKIE_NAME, CSRF_HEADER_NAME
 from app.routes.auth import router as auth_router, limiter
 from app.routes.users import router as users_router
 from app.routes.quizzes import router as quizzes_router
@@ -33,6 +34,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+_CSRF_SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+# No session cookie exists yet on these, so there's nothing to forge a token
+# for; login/register are also already rate-limited and password-gated.
+_CSRF_EXEMPT_PATHS = {"/auth/login", "/auth/register"}
+
+
+@app.middleware("http")
+async def csrf_protection(request: Request, call_next):
+    """Second, independent layer on top of SameSite=Lax cookies (see
+    core/auth.py for why both exist): every unsafe request whose session
+    cookie carries a CSRF claim must echo it back in a header that a
+    cross-site page has no way to read."""
+    if request.method not in _CSRF_SAFE_METHODS and request.url.path not in _CSRF_EXEMPT_PATHS:
+        session_token = request.cookies.get(COOKIE_NAME)
+        if session_token:
+            payload = verify_token(session_token)
+            expected_csrf = payload.get("csrf") if payload else None
+            if expected_csrf and request.headers.get(CSRF_HEADER_NAME) != expected_csrf:
+                return JSONResponse(status_code=403, content={"detail": "Missing or invalid CSRF token"})
+
+    return await call_next(request)
 
 
 @app.exception_handler(Exception)
