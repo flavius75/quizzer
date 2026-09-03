@@ -1,8 +1,9 @@
 from fastapi import Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer, HTTPBearer
+from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 from passlib.context import CryptContext
 from sqlmodel import Session, select
 from app.models import User
@@ -30,7 +31,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Kept so Swagger's "Authorize" button and API clients using a bare Bearer
 # token still work; the primary flow for the frontend is the httpOnly cookie.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
-oauth2_scheme_optional = HTTPBearer(auto_error=False)
 
 
 def hash_password(password: str) -> str:
@@ -57,7 +57,7 @@ def generate_csrf_token() -> str:
 def verify_token(token: str) -> Optional[dict]:
     try:
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    except JWTError:
+    except PyJWTError:
         return None
 
 

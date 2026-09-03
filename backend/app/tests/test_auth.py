@@ -5,7 +5,7 @@ never-expiring, non-invalidating session were both shipped and only caught
 by manual/agent review - see the fixes in app/routes/auth.py and
 app/core/auth.py. These tests pin that behavior down.
 """
-from jose import jwt
+import jwt
 
 from app.core.config import settings
 
