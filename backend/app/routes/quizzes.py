@@ -18,6 +18,43 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _score_single_choice(answer_data: PlayAnswerCreate, answers_by_id: Dict[int, Answer], question_id: int) -> bool:
+    if not answer_data.answer_id:
+        return False
+    submitted = answers_by_id.get(answer_data.answer_id)
+    return submitted is not None and submitted.question_id == question_id and submitted.is_correct
+
+
+def _score_multiple_choice(answer_data: PlayAnswerCreate, question_answers: List[Answer]) -> bool:
+    submitted_ids = set(answer_data.answer_ids or ([answer_data.answer_id] if answer_data.answer_id else []))
+    correct_ids = {a.id for a in question_answers if a.is_correct}
+    return bool(submitted_ids) and submitted_ids == correct_ids
+
+
+def _score_fill_blank(answer_data: PlayAnswerCreate, question_answers: List[Answer]) -> bool:
+    if not answer_data.text_response:
+        return False
+    correct_answer = next((a for a in question_answers if a.is_correct), None)
+    if not correct_answer or not correct_answer.text:
+        return False
+    return answer_data.text_response.lower().strip() == correct_answer.text.lower().strip()
+
+
+def _score_answer(
+    question: Question,
+    question_answers: List[Answer],
+    answer_data: PlayAnswerCreate,
+    answers_by_id: Dict[int, Answer],
+) -> bool:
+    if question.question_type in ("single_choice", "true_false"):
+        return _score_single_choice(answer_data, answers_by_id, question.id)
+    if question.question_type == "multiple_choice":
+        return _score_multiple_choice(answer_data, question_answers)
+    if question.question_type == "fill_blank":
+        return _score_fill_blank(answer_data, question_answers)
+    return False
+
+
 def _ensure_play_ownership(play: Play, current_user: Optional[User]) -> None:
     """A play started while logged out (play.user_id is None) has no owner
     to check - the session_uuid is the only credential, same as before.
@@ -376,32 +413,8 @@ async def submit_quiz_answers(
 
         answered_question_ids.add(question.id)
         total_questions += 1
-        is_correct = False
         question_answers = answers_by_question.get(question.id, [])
-
-        if question.question_type in ["single_choice", "true_false"]:
-            if answer_data.answer_id:
-                submitted = answers_by_id.get(answer_data.answer_id)
-                is_correct = (
-                    submitted is not None
-                    and submitted.question_id == question.id
-                    and submitted.is_correct
-                )
-
-        elif question.question_type == "multiple_choice":
-            submitted_ids = set(answer_data.answer_ids or ([answer_data.answer_id] if answer_data.answer_id else []))
-            correct_ids = {a.id for a in question_answers if a.is_correct}
-            is_correct = bool(submitted_ids) and submitted_ids == correct_ids
-
-        elif question.question_type == "fill_blank":
-            if answer_data.text_response:
-                correct_answer = next((a for a in question_answers if a.is_correct), None)
-
-                if correct_answer and correct_answer.text:
-                    is_correct = (
-                        answer_data.text_response.lower().strip()
-                        == correct_answer.text.lower().strip()
-                    )
+        is_correct = _score_answer(question, question_answers, answer_data, answers_by_id)
 
         if is_correct:
             correct_answers += 1
