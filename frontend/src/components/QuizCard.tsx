@@ -16,7 +16,7 @@ import { EllipsisVertical, Users, Play, ChevronRight, Lock, Globe } from 'lucide
 import { Button } from "@/components/ui/button"
 import { Link, useNavigate } from "react-router"
 import { useQuizzesStore } from '@/store/quizStore';
-import { Quiz, getQuestionCount } from "@/types"
+import { Quiz, getQuestionCount, isQuizAccessible } from "@/types"
 import { useAuthStore } from "@/store/authStore";
 import { api, getErrorMessage } from "@/lib/api";
 import { getCategoryColor } from "@/lib/utils";
@@ -31,11 +31,11 @@ export default function QuizCard({ singleQuiz, onDeleted }: QuizCardProps) {
     const { user } = useAuthStore();
     const navigate = useNavigate();
 
-    const { id, title, category, creator, visibility, sharing_link } = singleQuiz;
+    const { id, title, category, creator, visibility } = singleQuiz;
     const totalQuestions = getQuestionCount(singleQuiz);
-    
+
     // Check if user can access this quiz
-    const canAccess = visibility=='public' || user || sharing_link;
+    const canAccess = isQuizAccessible(singleQuiz, !!user);
     
     // Check if user can edit this quiz
     const canEdit = user && (
