@@ -1,6 +1,7 @@
 from sqlmodel import SQLModel
 from datetime import datetime
 from typing import Optional
+from pydantic import EmailStr, field_validator
 
 
 # ---------------------------
@@ -8,7 +9,7 @@ from typing import Optional
 # ---------------------------
 class UserBase(SQLModel):
     username: str
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
 
 
 class UserCreate(UserBase):
@@ -18,6 +19,13 @@ class UserCreate(UserBase):
     the registering client can request for itself."""
 
     password: str  # plain password, will be hashed before storing
+
+    @field_validator("password")
+    @classmethod
+    def _password_min_length(cls, value: str) -> str:
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        return value
 
 
 class UserRoleUpdate(SQLModel):

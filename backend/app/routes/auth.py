@@ -51,6 +51,10 @@ def register(request: Request, user_data: UserCreate, db: Session = Depends(get_
     if user_exists:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    username_exists = db.exec(select(User).where(User.username == user_data.username)).first()
+    if username_exists:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
     # `role` is never taken from the client: every new account starts as
     # "player". Promoting to creator/admin is a separate admin-only action
     # (PATCH /users/{user_id}/role).
