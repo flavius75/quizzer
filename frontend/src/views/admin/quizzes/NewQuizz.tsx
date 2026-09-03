@@ -153,8 +153,10 @@ export default function NewQuizz() {
 
             quizId = quizResponse.data.id;
 
-            // 2. Create questions and answers
-            for (const questionData of questions) {
+            // 2. Create questions and answers. Different questions don't
+            // depend on each other, so they're created concurrently; each
+            // question's own answers still wait on that question's id.
+            await Promise.all(questions.map(async (questionData) => {
                 const questionResponse = await api.post(
                     `/quizzes/${quizId}/questions`,
                     {
@@ -166,19 +168,19 @@ export default function NewQuizz() {
 
                 const questionId = questionResponse.data.id;
 
-                for (const answerData of questionData.answers) {
-                    if (answerData.text.trim()) { // Only create answers with text
-                        await api.post(
+                await Promise.all(
+                    questionData.answers
+                        .filter(answerData => answerData.text.trim()) // Only create answers with text
+                        .map(answerData => api.post(
                             `/quizzes/${quizId}/questions/${questionId}/answers`,
                             {
                                 text: answerData.text,
                                 image: answerData.image,
                                 is_correct: answerData.is_correct
                             }
-                        );
-                    }
-                }
-            }
+                        ))
+                );
+            }));
 
             // Success! Navigate to quiz list
             navigate('/admin/quizzes/list');
