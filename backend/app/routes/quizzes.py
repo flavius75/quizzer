@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 from typing import Dict, List, Optional
 from uuid import uuid4, UUID
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import func, or_
 
 logger = logging.getLogger(__name__)
@@ -149,7 +149,7 @@ def update_quiz(
         elif quiz.visibility == "public":
             quiz.sharing_link = None
 
-    quiz.updated_at = datetime.utcnow()
+    quiz.updated_at = datetime.now(timezone.utc)
     session.add(quiz)
     session.commit()
     session.refresh(quiz)
@@ -256,7 +256,7 @@ async def start_quiz_session(
         quiz_id=quiz_id,
         user_id=current_user.id if current_user else None,
         session_uuid=uuid4(),
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
     )
 
     session.add(play)
@@ -349,10 +349,15 @@ async def submit_quiz_answers(
     # A submission past the time limit still closes out the play session
     # (so it doesn't stay orphaned with finished_at=None forever) but scores 0.
     if quiz.time_limit:
-        elapsed_time = (datetime.utcnow() - play.started_at).total_seconds()
+        # Play.started_at is stored naive (UTC) via the model's default_factory,
+        # so it needs a tzinfo before it can be diffed against an aware "now".
+        started_at = play.started_at
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        elapsed_time = (datetime.now(timezone.utc) - started_at).total_seconds()
         if elapsed_time > quiz.time_limit:
             play.score = 0
-            play.finished_at = datetime.utcnow()
+            play.finished_at = datetime.now(timezone.utc)
             session.add(play)
             session.commit()
             return {"error": "Time limit exceeded", "score": 0, "total": len(valid_question_ids)}
@@ -429,7 +434,7 @@ async def submit_quiz_answers(
 
     final_score = correct_answers
     play.score = final_score
-    play.finished_at = datetime.utcnow()
+    play.finished_at = datetime.now(timezone.utc)
 
     if play.user_id:
         user = session.exec(select(User).where(User.id == play.user_id)).first()

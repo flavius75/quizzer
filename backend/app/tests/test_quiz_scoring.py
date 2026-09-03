@@ -4,7 +4,7 @@ bool, multiple_choice only checking the first selected answer, duplicate
 submissions inflating the score, scores never attributed to the logged-in
 player). Every case below pins one of those down.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlmodel import Session, select
@@ -269,7 +269,7 @@ def test_expired_time_limit_closes_the_session_with_zero_score(make_user, db_eng
         from app.models import Play
 
         play = db.exec(select(Play).where(Play.session_uuid == UUID(session_uuid))).first()
-        play.started_at = datetime.utcnow() - timedelta(seconds=10)
+        play.started_at = datetime.now(timezone.utc) - timedelta(seconds=10)
         db.add(play)
         db.commit()
 
