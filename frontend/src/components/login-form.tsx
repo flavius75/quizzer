@@ -8,27 +8,45 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { useAuthStore } from "@/store/authStore";
 import { useNavigate } from "react-router";
 import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { api, getErrorMessage } from "@/lib/api";
 import { User } from "@/types";
+
+const loginSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const handleLogin = async (data: LoginFormData) => {
     setError(null);
     setIsLoading(true);
 
@@ -36,22 +54,22 @@ export function LoginForm({
       const response = await api.post(
         "/auth/login",
         new URLSearchParams({
-          username: email, // FastAPI OAuth2 uses 'username' field for email
-          password: password,
+          username: data.email, // FastAPI OAuth2 uses 'username' field for email
+          password: data.password,
         }),
         {
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
         }
       );
 
-      const data = response.data;
+      const responseData = response.data;
 
       // The session token is set server-side as an httpOnly cookie; only
       // display data comes back in the response body.
       const userData: User = {
-        username: data.username,
-        user_role: data.user_role,
-        score: data.score || 0, // Map to score (frontend) from global_score (backend)
+        username: responseData.username,
+        user_role: responseData.user_role,
+        score: responseData.score || 0, // Map to score (frontend) from global_score (backend)
       };
 
       login(userData);
@@ -79,67 +97,72 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-3">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-              <div className="grid gap-3">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  {/* No "forgot password" flow yet - the backend has no
-                      password-reset endpoint, so this is deliberately not a
-                      link rather than a dead one. */}
-                </div>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)} 
-                  disabled={isLoading}
-                  required 
-                />
-              </div>
-              
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                  <div className="text-red-800 text-sm">{error}</div>
-                </div>
-              )}
-              
-              <div className="flex flex-col gap-3">
-                <Button 
-                  type="submit" 
-                  className="w-full bg-teal-600 hover:bg-teal-700"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Signing in...
-                    </div>
-                  ) : (
-                    'Login'
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleLogin)}>
+              <div className="flex flex-col gap-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="m@example.com" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Button>
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center">
+                        <FormLabel>Password</FormLabel>
+                        {/* No "forgot password" flow yet - the backend has no
+                            password-reset endpoint, so this is deliberately not a
+                            link rather than a dead one. */}
+                      </div>
+                      <FormControl>
+                        <Input type="password" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <div className="text-red-800 text-sm">{error}</div>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3">
+                  <Button
+                    type="submit"
+                    className="w-full bg-teal-600 hover:bg-teal-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Signing in...
+                      </div>
+                    ) : (
+                      'Login'
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <a href="/auth/register" className="underline underline-offset-4 hover:text-teal-600">
-                Sign up
-              </a>
-            </div>
-          </form>
+              <div className="mt-4 text-center text-sm">
+                Don&apos;t have an account?{" "}
+                <a href="/auth/register" className="underline underline-offset-4 hover:text-teal-600">
+                  Sign up
+                </a>
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
