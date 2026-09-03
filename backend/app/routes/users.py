@@ -59,9 +59,6 @@ def update_user_role(
 ):
     """Promote/demote a user. Admin-only: the client can never set its own
     role at registration (see routes/auth.py) - this is the only way in."""
-    if role_data.role not in ("player", "creator", "admin"):
-        raise HTTPException(status_code=400, detail="Invalid role")
-
     user = session.exec(select(User).where(User.id == user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

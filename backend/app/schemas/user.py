@@ -1,7 +1,9 @@
 from sqlmodel import SQLModel
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import EmailStr, field_validator
+
+Role = Literal["player", "creator", "admin"]
 
 
 # ---------------------------
@@ -29,12 +31,12 @@ class UserCreate(UserBase):
 
 
 class UserRoleUpdate(SQLModel):
-    role: str  # player | creator | admin
+    role: Role
 
 
 class UserRead(UserBase):
     id: int
-    role: str
+    role: Role
     global_score: int
     created_at: datetime
 

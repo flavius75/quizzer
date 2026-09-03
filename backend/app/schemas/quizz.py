@@ -1,7 +1,10 @@
 from sqlmodel import SQLModel
-from typing import Optional, List
+from typing import Literal, Optional, List
 from datetime import datetime
 from uuid import UUID
+
+Visibility = Literal["public", "private"]
+QuestionType = Literal["single_choice", "multiple_choice", "fill_blank", "true_false"]
 
 
 # ---------------------------
@@ -11,7 +14,7 @@ class QuizBase(SQLModel):
     title: str
     category: Optional[str] = None
     image: Optional[str] = None
-    visibility: str = "public"  # public | private
+    visibility: Visibility = "public"
     time_limit: Optional[int] = None  # seconds
 
 
@@ -23,7 +26,7 @@ class QuizUpdate(SQLModel):
     title: Optional[str] = None
     category: Optional[str] = None
     image: Optional[str] = None
-    visibility: Optional[str] = None
+    visibility: Optional[Visibility] = None
     time_limit: Optional[int] = None
 
 
@@ -41,7 +44,7 @@ class QuizRead(QuizBase):
 class QuestionBase(SQLModel):
     text: str
     image: Optional[str] = None
-    question_type: str  # single_choice | multiple_choice | fill_blank | true_false
+    question_type: QuestionType
 
 
 class QuestionCreate(QuestionBase):
@@ -130,7 +133,7 @@ class QuestionReadWithAnswers(SQLModel):
     id: int
     text: str
     image: Optional[str] = None
-    question_type: str
+    question_type: QuestionType
     quiz_id: int
     created_at: datetime
     answers: List[AnswerReadNested] = []
@@ -142,7 +145,7 @@ class QuizReadWithQuestions(SQLModel):
     title: str
     category: Optional[str] = None
     image: Optional[str] = None
-    visibility: str
+    visibility: Visibility
     time_limit: Optional[int] = None
     creator_id: Optional[int] = None
     created_at: datetime

@@ -84,8 +84,9 @@ def test_update_role_rejects_unknown_role(make_user):
     alice = make_user(username="alice")
     admin = make_user(username="root", role="admin")
 
+    # Rejected by Pydantic's Literal validation before reaching the handler.
     response = admin.patch(f"/users/{alice.user_id}/role", json={"role": "superuser"})
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 def test_delete_user_requires_admin(make_user):
