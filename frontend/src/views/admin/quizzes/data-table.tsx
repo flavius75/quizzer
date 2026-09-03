@@ -21,7 +21,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Search } from "lucide-react"
 import { createColumns } from "./columns"
 
@@ -41,10 +41,15 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   
-  // Create columns with actions if provided
-  const columnsWithActions = onEdit || onDelete 
-    ? createColumns({ onEdit, onDelete }) as ColumnDef<TData, TValue>[]
-    : columns
+  // Create columns with actions if provided. Memoized so react-table sees a
+  // stable column identity across renders instead of a brand-new array (and
+  // brand-new cell/header closures) on every keystroke in the search box.
+  const columnsWithActions = useMemo(
+    () => (onEdit || onDelete
+      ? createColumns({ onEdit, onDelete }) as ColumnDef<TData, TValue>[]
+      : columns),
+    [onEdit, onDelete, columns]
+  )
 
   const table = useReactTable({
     data,
