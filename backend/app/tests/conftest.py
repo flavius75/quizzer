@@ -31,7 +31,7 @@ db_module.engine = engine
 from app.main import app  # noqa: E402  (must follow the engine patch above)
 from app.core.database import get_session  # noqa: E402
 from app.models import User  # noqa: E402
-from app.routes.auth import limiter  # noqa: E402
+from app.core.rate_limit import limiter  # noqa: E402
 
 
 def _get_session_override():

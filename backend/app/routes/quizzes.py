@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from app.core.auth import get_current_user, get_current_user_optional_bearer, require_role
 from app.core.database import get_session
+from app.core.rate_limit import limiter
 from app.models import Quiz, Question, User, Answer, Play, PlayAnswer
 from app.schemas import (
     AnswerCreate, QuizCreate, QuizUpdate, QuizRead, QuizReadWithQuestions,
@@ -226,7 +227,9 @@ def add_question_to_quiz(
 
 # Start a new game session
 @router.post("/{quiz_id}/start")
+@limiter.limit("30/minute")
 async def start_quiz_session(
+    request: Request,
     quiz_id: int,
     session: Session = Depends(get_session),
     current_user: Optional[User] = Depends(get_current_user_optional_bearer),
@@ -303,7 +306,9 @@ async def start_quiz_session(
 
 # Submit answer for a question
 @router.post("/play/{session_uuid}/submit")
+@limiter.limit("20/minute")
 async def submit_quiz_answers(
+    request: Request,
     session_uuid: UUID,
     answers: List[PlayAnswerCreate],
     session: Session = Depends(get_session),

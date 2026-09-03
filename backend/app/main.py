@@ -7,8 +7,9 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
-from app.core.auth import verify_token, COOKIE_NAME, CSRF_COOKIE_NAME, CSRF_HEADER_NAME
-from app.routes.auth import router as auth_router, limiter
+from app.core.auth import verify_token, COOKIE_NAME, CSRF_HEADER_NAME
+from app.core.rate_limit import limiter
+from app.routes.auth import router as auth_router
 from app.routes.users import router as users_router
 from app.routes.quizzes import router as quizzes_router
 from app.helpers.logger import setup_logging

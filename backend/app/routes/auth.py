@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from app.core.rate_limit import limiter
 from app.core.auth import (
     create_access_token,
     verify_password,
@@ -20,7 +19,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 def _set_auth_cookies(response: Response, token: str, csrf_token: str) -> None:
