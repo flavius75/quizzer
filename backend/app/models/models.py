@@ -45,7 +45,7 @@ class Quiz(SQLModel, table=True):
     visibility: str = Field(default="public")  # public | private
     sharing_link: Optional[str] = Field(default=None, unique=True)  # For private quiz sharing
     time_limit: Optional[int] = None  # seconds
-    creator_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    creator_id: Optional[int] = Field(default=None, foreign_key="users.id", index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     creator: Optional[User] = Relationship(back_populates="quizzes")
@@ -63,7 +63,7 @@ class Question(SQLModel, table=True):
     __tablename__ = "questions"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    quiz_id: int = Field(foreign_key="quizzes.id", nullable=False)
+    quiz_id: int = Field(foreign_key="quizzes.id", nullable=False, index=True)
     text: str
     image: Optional[str] = None
     question_type: str  # single_choice | multiple_choice | fill_blank | true_false
@@ -97,7 +97,7 @@ class Play(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     quiz_id: int = Field(foreign_key="quizzes.id", nullable=False, index=True)
     user_id: Optional[int] = Field(default=None, foreign_key="users.id")  # null = anonymous
-    session_uuid: UUID = Field(default_factory=uuid4, index=True, nullable=False)
+    session_uuid: UUID = Field(default_factory=uuid4, index=True, nullable=False, unique=True)
     score: int = Field(default=0)
     started_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     finished_at:  Optional[datetime] = Field(default=None, index=True)
