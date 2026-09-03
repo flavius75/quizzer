@@ -1,13 +1,16 @@
 import { Navigate, Outlet } from "react-router";
-import { useAuthStore } from "@/store/authStore";
+import { useValidatedUser } from "@/hooks/useValidatedUser";
 
 const UserGuard = () => {
-  const { user } = useAuthStore();
+  const { user, isValidated } = useValidatedUser();
 
-  return user ? <Outlet /> : <Navigate to="/auth/login" replace />;
+  if (user) {
+    return <Outlet />;
+  }
+  if (!isValidated) {
+    return null;
+  }
+  return <Navigate to="/auth/login" replace />;
 };
 
 export default UserGuard;
-
-
-
