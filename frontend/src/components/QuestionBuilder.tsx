@@ -12,7 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Plus, Trash2, Upload, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 
 interface Answer {
     id: string;
@@ -35,9 +35,6 @@ interface QuestionBuilderProps {
 }
 
 export default function QuestionBuilder({ question, onChange }: QuestionBuilderProps) {
-    const [, setCorrectAnswerIndex] = useState(() => {
-        return question.answers.findIndex(a => a.is_correct);
-    });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // No file-storage backend (S3, etc.) exists yet, so the image is
@@ -101,7 +98,6 @@ export default function QuestionBuilder({ question, onChange }: QuestionBuilderP
             is_correct: answer.id === answerId
         }));
         onChange({ answers: newAnswers });
-        setCorrectAnswerIndex(question.answers.findIndex(a => a.id === answerId));
     };
 
     // Handle multiple choice selection
@@ -114,7 +110,7 @@ export default function QuestionBuilder({ question, onChange }: QuestionBuilderP
 
     // Add new answer option
     const addAnswer = () => {
-        const newId = (Math.max(...question.answers.map(a => parseInt(a.id))) + 1).toString();
+        const newId = crypto.randomUUID();
         const newAnswers = [
             ...question.answers,
             { id: newId, text: '', is_correct: false }
