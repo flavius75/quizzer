@@ -7,6 +7,9 @@ on admin-only routes. See app/core/auth.py (require_role) and
 app/routes/users.py / app/routes/quizzes.py for the fixes.
 """
 import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app
 
 
 # ---------------------------------------------------------------------------
@@ -261,3 +264,146 @@ def test_stranger_cannot_add_questions_to_someone_elses_quiz(private_quiz):
         json={"text": "Injected?", "question_type": "true_false"},
     )
     assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Play session ownership: submit/result only for whoever started the play
+# (or an admin) - not "anyone who has the session_uuid". A play started
+# while logged out has no owner to enforce, same as before.
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def logged_in_play(make_user):
+    """A public quiz started by a logged-in player, session_uuid included -
+    a stranger who somehow obtains that uuid (logs, browser history,
+    Referer) must not be able to act as that player."""
+    creator = make_user(username="creator", role="creator")
+    player = make_user(username="player")
+    stranger = make_user(username="stranger")
+    admin = make_user(username="root", role="admin")
+
+    quiz = creator.post(
+        "/quizzes/", json={"title": "Public Quiz", "visibility": "public"}
+    ).json()
+    question = creator.post(
+        f"/quizzes/{quiz['id']}/questions",
+        json={"text": "2+2?", "question_type": "single_choice"},
+    ).json()
+    answer = creator.post(
+        f"/quizzes/{quiz['id']}/questions/{question['id']}/answers",
+        json={"text": "4", "is_correct": True},
+    ).json()
+
+    start = player.post(f"/quizzes/{quiz['id']}/start")
+    session_uuid = start.json()["session_uuid"]
+
+    return {
+        "player": player,
+        "stranger": stranger,
+        "admin": admin,
+        "session_uuid": session_uuid,
+        "question_id": question["id"],
+        "answer_id": answer["id"],
+    }
+
+
+def test_stranger_cannot_submit_to_someone_elses_play_session(client, logged_in_play):
+    """Regression test: submit/result had no owner check at all - the
+    session_uuid alone (leakable via logs/history/Referer) was enough to
+    submit answers or read results as another logged-in player."""
+    response = logged_in_play["stranger"].post(
+        f"/quizzes/play/{logged_in_play['session_uuid']}/submit",
+        json=[{
+            "question_id": logged_in_play["question_id"],
+            "answer_id": logged_in_play["answer_id"],
+        }],
+    )
+    assert response.status_code == 403
+
+
+def test_anonymous_cannot_submit_to_someone_elses_play_session(client, logged_in_play):
+    response = client.post(
+        f"/quizzes/play/{logged_in_play['session_uuid']}/submit",
+        json=[{
+            "question_id": logged_in_play["question_id"],
+            "answer_id": logged_in_play["answer_id"],
+        }],
+    )
+    assert response.status_code == 403
+
+
+def test_owner_can_submit_to_their_own_play_session(logged_in_play):
+    response = logged_in_play["player"].post(
+        f"/quizzes/play/{logged_in_play['session_uuid']}/submit",
+        json=[{
+            "question_id": logged_in_play["question_id"],
+            "answer_id": logged_in_play["answer_id"],
+        }],
+    )
+    assert response.status_code == 200
+
+
+def test_admin_can_submit_to_anyones_play_session(logged_in_play):
+    response = logged_in_play["admin"].post(
+        f"/quizzes/play/{logged_in_play['session_uuid']}/submit",
+        json=[{
+            "question_id": logged_in_play["question_id"],
+            "answer_id": logged_in_play["answer_id"],
+        }],
+    )
+    assert response.status_code == 200
+
+
+def test_stranger_cannot_read_someone_elses_play_result(logged_in_play):
+    logged_in_play["player"].post(
+        f"/quizzes/play/{logged_in_play['session_uuid']}/submit",
+        json=[{
+            "question_id": logged_in_play["question_id"],
+            "answer_id": logged_in_play["answer_id"],
+        }],
+    )
+    response = logged_in_play["stranger"].get(
+        f"/quizzes/play/{logged_in_play['session_uuid']}/result"
+    )
+    assert response.status_code == 403
+
+
+def test_owner_can_read_their_own_play_result(logged_in_play):
+    logged_in_play["player"].post(
+        f"/quizzes/play/{logged_in_play['session_uuid']}/submit",
+        json=[{
+            "question_id": logged_in_play["question_id"],
+            "answer_id": logged_in_play["answer_id"],
+        }],
+    )
+    response = logged_in_play["player"].get(
+        f"/quizzes/play/{logged_in_play['session_uuid']}/result"
+    )
+    assert response.status_code == 200
+
+
+def test_anonymous_play_has_no_owner_so_anyone_with_the_uuid_can_act(client, make_user):
+    """Unchanged behavior: a guest play has no user_id to protect, so the
+    session_uuid remains the only credential - same as before this fix."""
+    creator = make_user(username="creator", role="creator")
+    quiz = creator.post(
+        "/quizzes/", json={"title": "Guest-playable Quiz", "visibility": "public"}
+    ).json()
+    question = creator.post(
+        f"/quizzes/{quiz['id']}/questions",
+        json={"text": "2+2?", "question_type": "single_choice"},
+    ).json()
+    answer = creator.post(
+        f"/quizzes/{quiz['id']}/questions/{question['id']}/answers",
+        json={"text": "4", "is_correct": True},
+    ).json()
+
+    start = client.post(f"/quizzes/{quiz['id']}/start")
+    session_uuid = start.json()["session_uuid"]
+
+    another_anonymous_client = TestClient(app)
+    response = another_anonymous_client.post(
+        f"/quizzes/play/{session_uuid}/submit",
+        json=[{"question_id": question["id"], "answer_id": answer["id"]}],
+    )
+    assert response.status_code == 200

@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _ensure_play_ownership(play: Play, current_user: Optional[User]) -> None:
+    """A play started while logged out (play.user_id is None) has no owner
+    to check - the session_uuid is the only credential, same as before.
+    A play started while logged in is only accessible to that same user (or
+    an admin): otherwise, a leaked session_uuid (logs, browser history,
+    Referer header) would let anyone submit answers or read results as if
+    they were that player."""
+    if play.user_id is None:
+        return
+    if not current_user or (current_user.id != play.user_id and current_user.role != "admin"):
+        raise HTTPException(status_code=403, detail="You do not have access to this play session")
+
+
 # Get all public quizzes
 @router.get("/", response_model=List[QuizRead])
 def get_quizzes(
@@ -294,6 +307,7 @@ async def submit_quiz_answers(
     session_uuid: UUID,
     answers: List[PlayAnswerCreate],
     session: Session = Depends(get_session),
+    current_user: Optional[User] = Depends(get_current_user_optional_bearer),
 ):
     """Submit all answers and calculate final score"""
 
@@ -303,6 +317,8 @@ async def submit_quiz_answers(
 
     if not play:
         raise HTTPException(status_code=404, detail="Play session not found")
+
+    _ensure_play_ownership(play, current_user)
 
     if play.finished_at:
         raise HTTPException(status_code=400, detail="Quiz already completed")
@@ -435,6 +451,7 @@ async def submit_quiz_answers(
 async def get_quiz_result(
     session_uuid: UUID,
     session: Session = Depends(get_session),
+    current_user: Optional[User] = Depends(get_current_user_optional_bearer),
 ):
     """Get quiz results"""
     play = session.exec(
@@ -443,6 +460,8 @@ async def get_quiz_result(
 
     if not play:
         raise HTTPException(status_code=404, detail="Play session not found")
+
+    _ensure_play_ownership(play, current_user)
 
     if not play.finished_at:
         raise HTTPException(status_code=400, detail="Quiz not completed yet")
