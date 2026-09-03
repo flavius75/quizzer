@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from app.core.auth import get_current_user, get_current_user_optional_bearer, require_role
 from app.core.database import get_session
 from app.core.rate_limit import limiter
@@ -35,7 +35,7 @@ def _ensure_play_ownership(play: Play, current_user: Optional[User]) -> None:
 @router.get("/", response_model=List[QuizRead])
 def get_quizzes(
     skip: int = 0,
-    limit: int = 10,
+    limit: int = Query(default=10, le=100),
     session: Session = Depends(get_session),
     current_user: Optional[User] = Depends(get_current_user_optional_bearer),
 ):
@@ -92,7 +92,7 @@ def get_quiz_with_questions(
 
 
 # Get quiz by UUID (for sharing links)
-@router.get("/play/{quiz_uuid}")
+@router.get("/play/{quiz_uuid}", response_model=QuizRead)
 def get_quiz_by_uuid(quiz_uuid: str, session: Session = Depends(get_session)):
     quiz = session.exec(select(Quiz).where(Quiz.uuid == quiz_uuid)).first()
     if not quiz:
@@ -174,15 +174,13 @@ def delete_quiz(
     question_ids = [
         q.id for q in session.exec(select(Question).where(Question.quiz_id == quiz_id)).all()
     ]
-    play_ids = [
-        p.id for p in session.exec(select(Play).where(Play.quiz_id == quiz_id)).all()
-    ]
-    for play_id in play_ids:
+    plays = session.exec(select(Play).where(Play.quiz_id == quiz_id)).all()
+    for play in plays:
         for play_answer in session.exec(
-            select(PlayAnswer).where(PlayAnswer.play_id == play_id)
+            select(PlayAnswer).where(PlayAnswer.play_id == play.id)
         ).all():
             session.delete(play_answer)
-    for play in session.exec(select(Play).where(Play.quiz_id == quiz_id)).all():
+    for play in plays:
         session.delete(play)
     for question_id in question_ids:
         for answer in session.exec(
@@ -494,7 +492,7 @@ async def get_quiz_result(
 @router.get("/{quiz_id}/leaderboard")
 async def get_quiz_leaderboard(
     quiz_id: int,
-    limit: int = 10,
+    limit: int = Query(default=10, le=100),
     session: Session = Depends(get_session),
 ):
     """Get leaderboard for a specific quiz"""
